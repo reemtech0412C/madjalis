@@ -1,7 +1,7 @@
 {
   "name": "minbar",
   "productName": "المجالس",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "المجالس — بثّ وتسجيل الدروس والخطب والمحاضرات باحتراف",
   "main": "main.js",
   "private": true,
