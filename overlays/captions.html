@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>الترجمة النصّيّة</title>
+<link rel="stylesheet" href="ov.css">
+<style>
+  #cap{position:absolute;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+  #box{max-width:1580px;min-width:240px;padding:16px 38px 18px;border-radius:22px;background:rgba(6,14,12,.74);border:1.5px solid var(--line);
+       text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.42);opacity:0;transform:translateY(10px);transition:opacity .35s,transform .35s}
+  #box.on{opacity:1;transform:none}
+  .ln{line-height:1.55;text-shadow:0 2px 12px rgba(0,0,0,.65);white-space:nowrap}
+  .ln.first{margin-top:8px}.grp .ln.first:first-child{margin-top:0}
+  .grp+.grp{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)}
+  .ln.rtl{direction:rtl;font-family:var(--fa);font-weight:700;color:#fff}
+  .ln.ltr{direction:ltr;font-family:var(--fs);font-weight:500;color:var(--accent-hi)}
+  .ln.rtl.tr{font-family:var(--fs);font-weight:500;color:var(--accent-hi)}
+</style></head>
+<body>
+<div id="cap" data-keep="1"><div id="box"></div></div>
+<script src="themes.js"></script><script src="ov.js"></script>
+<script>
+  // الترجمة الحيّة: الصفحة تبقى ثابتة (data-keep) ويصلها كل سطر جديد من البرنامج عبر حدث «caption»
+  const RTL = new Set(["ar", "ur", "fa"]);
+  const SIZE = { s: [36, 28, 4], m: [46, 34, 3], l: [58, 42, 3] };        // [خطّ الأصل، خطّ الترجمة، عدد الأسطر الأقصى]
+  const AVAIL = 1490;                                                    // عرض السطر المتاح (px)
+  const cv = document.createElement("canvas").getContext("2d");
+  let CFG = { on: false, langs: ["ar"], size: "m", pos: "bottom", lift: 130 }, segs = [], hideT = null, shownLangs = [];
+  const box = document.getElementById("box"), cap = document.getElementById("cap");
+
+  function place() {
+    const top = CFG.pos === "top";
+    cap.style.top = top ? "60px" : "auto"; cap.style.bottom = top ? "auto" : (CFG.lift ?? 130) + "px";
+  }
+  // الجملة المتّصلة تبقى في سطر واحد؛ لو زادت عن عرض الشاشة تُقسَّم على أقلّ عدد من الأسطر المتوازنة عند حدود الكلمات.
+  // كل جملة جديدة تبدأ سطراً جديداً (لا تُلصَق بما قبلها).
+  const fam = v => (getComputedStyle(document.documentElement).getPropertyValue(v) || "").trim() || "sans-serif";
+  const sentencesOf = text => String(text || "").split("\n").flatMap(l => l.split(/(?<=[.؟?!؛;…])\s+/)).map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+  function rowsOf(sentence, font) {
+    cv.font = font;
+    const w = t => cv.measureText(t).width, total = w(sentence);
+    if (total <= AVAIL) return [sentence];
+    const words = sentence.split(" "), n = Math.min(words.length, Math.ceil(total / AVAIL)), target = total / n, out = [];
+    let cur = "";
+    for (const wd of words) {
+      const t = cur ? cur + " " + wd : wd;
+      if (cur && w(t) > target * 1.08 && out.length < n - 1) { out.push(cur); cur = wd; } else cur = t;
+    }
+    if (cur) out.push(cur);
+    return out;
+  }
+
+  function render() {
+    place();
+    const now = Date.now();
+    segs = segs.filter(s => now - s.ts < 16000).slice(-3);
+    if (!CFG.on || !segs.length) { box.classList.remove("on"); return; }
+    const [fa, ft, rows] = SIZE[CFG.size] || SIZE.m;
+    const langs = CFG.langs && CFG.langs.length ? CFG.langs : [segs[segs.length - 1].src];
+    box.innerHTML = "";
+    langs.forEach(l => {
+      const orig = segs.some(s => s.src === l), px = orig ? fa : ft, font = (orig ? "700 " : "500 ") + px + "px " + fam(orig ? "--fa" : "--fs");
+      // كل جملة = سطر (أو أسطر متوازنة لو طالت)، ثمّ الجملة التي بعدها في سطر جديد
+      const sents = segs.flatMap(s => sentencesOf(l === s.src ? s.text : ((s.tr || {})[l] || ""))).map(t => rowsOf(t, font));
+      if (!sents.length) return;
+      // نُبقي آخر الأسطر في حدّ العدد الأقصى، ولا نقطع جملةً أخيرة طالت
+      const keep = []; let n = 0;
+      for (let i = sents.length - 1; i >= 0; i--) { if (keep.length && n + sents[i].length > rows) break; keep.unshift(sents[i]); n += sents[i].length; }
+      const g = document.createElement("div"); g.className = "grp";
+      for (const rs of keep) rs.forEach((t, i) => {
+        const d = document.createElement("div");
+        d.className = "ln " + (RTL.has(l) ? "rtl" : "ltr") + (orig ? "" : " tr") + (i === 0 ? " first" : "");
+        d.style.fontSize = px + "px";
+        d.textContent = t;
+        g.appendChild(d);
+      });
+      box.appendChild(g);
+    });
+    box.classList.toggle("on", !!box.children.length);
+    clearTimeout(hideT); hideT = setTimeout(() => { segs = []; render(); }, 8000);
+  }
+
+  boot(S => { CFG = Object.assign(CFG, S.captions || {}); render(); });
+  listen((k, d) => {
+    if (k !== "caption" || !d) return;
+    const i = segs.findIndex(s => s.id === d.id);
+    if (i >= 0) segs[i] = d; else segs.push(d);
+    render();
+  });
+</script>
+</body></html>

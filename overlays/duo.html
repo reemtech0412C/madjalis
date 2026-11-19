@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>إطار الشيخ + الحضور</title>
+<link rel="stylesheet" href="ov.css"></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script><script src="podkit.js"></script>
+<script>
+  // ?who=sheikh|cam2 &box=x,y,w,h &big=1 — إطار واحد (حدّ زخرفيّ + شارة الاسم). الإطاران في مصدرين منفصلين ليكون الصغير فوق الكبير عند التداخل
+  boot(S => {
+    const b = document.body, t = S._t, shape = S.design.frame || "arch", who = P("who") || "sheikh";
+    const box = (P("box") || "").split(",").map(Number);
+    if (box.length < 4 || !box[2]) return;
+    const [x, y, w, h] = box, T = texts();
+    if (S.mode === "podcast" && P("half")) { PK.halfFrame(S, who, box, !!P("big")); return; }
+    if (S.mode === "podcast") { PK.duoFrame(S, who, box, !!P("big")); return; }
+    frameSVG(shape, box, { sw: 3, inner: 12 });
+    const name = who === "cam2" ? ((S.cam2 && S.cam2.label) || "كاميرا الحضور") : T.sheikh;
+    const role = who === "cam2" ? "" : T["sheikh-title"];
+    if (!name) return;
+    const k = Math.max(.62, Math.min(1.1, w / 760));
+    const row = el("div", { left: x + "px", top: (y + h - 30 * k) + "px", width: w + "px", display: "flex", justifyContent: "center", pointerEvents: "none" }, b, "abs");
+    const pill = el("div", { display: "flex", alignItems: "center", gap: 14 * k + "px", padding: (7 * k) + "px " + (28 * k) + "px", borderRadius: "99px", maxWidth: (w - 40) + "px",
+      background: t.deep + "ee", border: "1.5px solid var(--accent)", boxShadow: "0 10px 30px rgba(0,0,0,.4)", animationDelay: ".2s" }, row, "rise");
+    if (role) { const r = el("div", { font: "500 " + 20 * k + "px var(--fs)", color: "var(--accent-hi)", whiteSpace: "nowrap" }, pill); r.textContent = role; }
+    const nameStyled = (S.design.textStyle || {}).name;
+    const n = el("div", { font: "700 " + 32 * k + "px var(--fa)", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, pill); n.textContent = AR(name);
+    if (nameStyled && (nameStyled.bg && nameStyled.bg.on || nameStyled.border && nameStyled.border.on || nameStyled.shadow && nameStyled.shadow.on || nameStyled.text && nameStyled.text.color)) { pill.style.cssText += ";background:transparent;border:0;box-shadow:none;padding:0"; styleBox(pill, "name"); }
+  });
+</script>
+</body></html>

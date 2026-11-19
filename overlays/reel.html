@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>نصّ الريلز</title>
+<link rel="stylesheet" href="ov.css">
+<style>
+  html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;margin:0}
+  .abs2{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 70px;box-sizing:border-box;gap:14px}
+  .box{max-width:100%;box-sizing:border-box;line-height:1.45;overflow-wrap:anywhere;color:#fff}
+  .ttl{font:700 74px var(--fa)}.sub{font:500 40px var(--fs);color:var(--accent-hi)}
+  .note{font:500 44px var(--fs);white-space:pre-line;line-height:1.7}
+  .foot{font:700 38px var(--fs);color:var(--accent-hi)}
+  .role{font:500 34px var(--fs);color:var(--accent-hi)}.nm{font:700 70px var(--fa)}
+  .bar{width:150px;height:4px;border-radius:4px;background:var(--accent);margin:4px 0}
+</style></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script>
+<script>
+  // يُرسَم بمقاس 1080×1920 وتلتقطه الواجهة كصورة PNG شفّافة تُركَّب فوق الريلز.   ?d=JSON
+  // الوضع العاديّ: عنوان (الدورة/الكتاب) أعلى المقطع واسم الشيخ أسفله — نصّ مباشر على الفيديو بلا إطارات (إلا لو فُعّلت الخلفيّة) مع تظليل خفيف للوضوح
+  // mode=logo: بطاقة الشعار للبداية والنهاية
+  boot(S => {
+    let d = {}; try { d = JSON.parse(P("d") || "{}"); } catch {}
+    const t = S._t, T = texts(), b = document.body, TH = MINBAR_THEMES, sc = Number(d.scale) || 1;
+    if (d.mode === "logo") {
+      // بطاقة معتّمة بالكامل (لا شفّافة): ينفتح عليها الفيديو كحدقة العين عند البداية، وتنغلق عليه عند النهاية
+      const base0 = TH.col(d.bandColor || "theme:deep", t), acc0 = TH.col(d.lineColor || "theme:accent", t);
+      const card = el("div", { inset: 0, overflow: "hidden", background: "radial-gradient(80% 60% at 50% 46%, " + base0 + ", #000 135%)" }, b, "abs");
+      pattern(card, { alpha: .14, scale: .9, move: false });
+      el("div", { left: "50%", top: "50%", width: "760px", height: "760px", transform: "translate(-50%,-54%)", borderRadius: "50%", border: "3px solid " + TH.rgba(acc0, .55), boxShadow: "0 0 90px " + TH.rgba(acc0, .25) + ", inset 0 0 90px " + TH.rgba(acc0, .15) }, card, "abs");
+      if (d.logoFile) { const box = el("div", { left: "130px", right: "130px", top: "50%", height: "820px", transform: "translateY(-52%)", display: "flex", alignItems: "center", justifyContent: "center" }, b, "abs");
+        const im = el("img", { maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "drop-shadow(0 24px 50px rgba(0,0,0,.5))" }, box); im.src = "/media/" + encodeURIComponent(d.logoFile);
+        im.onload = () => { window.__ready = true; }; im.onerror = () => { window.__ready = true; }; }
+      else window.__ready = true;
+      return;
+    }
+    if (d.mode === "cap") {
+      // الجملة المتّصلة في سطر واحد؛ لو لم تتّسع لعرض الريلز تُقسَّم على أقلّ عدد من الأسطر المتوازنة. الجملة السابقة باهتة فوقها. window.__showCap(frame) يرسم إطاراً.
+      const st = Object.assign({ size: "m", pos: "bottom", box: true, top: 300, bot: 360, font: "" }, d.style || {});
+      const TOPc = Math.max(0, Math.min(700, Number(st.top) || 0)), BOTc = Math.max(0, Math.min(700, Number(st.bot) || 0));
+      const V = v => (getComputedStyle(document.documentElement).getPropertyValue(v) || "").trim() || "sans-serif";       // لوحة canvas لا تفهم var(): نحلّ العائلات أوّلاً
+      const px = { s: 50, m: 62, l: 76 }[st.size] || 62, AV = 930, fam = st.font ? '"' + st.font + '", ' + V("--fa") : V("--fa"), famS = V("--fs");
+      const cv = document.createElement("canvas").getContext("2d");
+      const css = st.pos === "top" ? { top: (TOPc + 50) + "px" } : st.pos === "center" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: (BOTc + 56) + "px" };
+      const holder = el("div", Object.assign({ left: "50px", right: "50px", display: "flex", justifyContent: "center", pointerEvents: "none" }, css), b, "abs");
+      const rowsOf = (text, font) => {
+        cv.font = font; const w = s => cv.measureText(s).width, total = w(text);
+        if (total <= AV) return [text];
+        const words = text.split(" "), n = Math.min(words.length, Math.ceil(total / AV)), target = total / n, out = []; let cur = "";
+        for (const wd of words) { const t2 = cur ? cur + " " + wd : wd; if (cur && w(t2) > target * 1.08 && out.length < n - 1) { out.push(cur); cur = wd; } else cur = t2; }
+        if (cur) out.push(cur); return out;
+      };
+      window.__showCap = fr => {
+        holder.innerHTML = ""; if (!fr || !fr.lines || !fr.lines.length) return;
+        const card = el("div", Object.assign({ maxWidth: "980px", textAlign: "center", direction: "rtl", display: "flex", flexDirection: "column", gap: "8px", boxSizing: "border-box" },
+          st.box !== false ? { background: "rgba(6,12,11,.62)", padding: "20px 34px 22px", borderRadius: "26px", border: "1.5px solid " + TH.rgba(TH.col("theme:accent", t), .45) } : {}), holder);
+        for (const ln of fr.lines) {
+          const kind = ln.kind || "orig", size = kind === "tr" ? Math.round(px * .68) : kind === "prev" ? Math.round(px * .74) : px;
+          const weight = kind === "tr" ? 500 : 700, font = weight + " " + size + "px " + (kind === "tr" ? famS : fam);
+          rowsOf(String(ln.text || ""), font).forEach(r => {
+            const row = el("div", { font, whiteSpace: "nowrap", lineHeight: 1.5, color: kind === "tr" ? "var(--accent-hi)" : "#fff", opacity: kind === "prev" ? .5 : 1,
+              direction: kind === "tr" && ln.lang && !["ar", "ur", "fa"].includes(ln.lang) ? "ltr" : "rtl", textShadow: "0 2px 12px rgba(0,0,0,.7)" }, card);
+            row.textContent = AR(r);
+          });
+        }
+      };
+      const fonts = ["TSD", "TS", "Amiri", st.font].filter(Boolean);
+      Promise.all(fonts.map(f => document.fonts.load('700 40px "' + f + '"', "أبجد").catch(() => {}))).then(() => document.fonts.ready).then(() => setTimeout(() => {
+        if (d.sample) window.__showCap({ lines: [{ text: "بسم الله الرحمن الرحيم", kind: "prev" }, { text: "الحمد لله ربّ العالمين والصلاة والسلام على أشرف المرسلين", kind: "orig" }].concat((d.langs || []).includes("fr") ? [{ text: "Louange à Allah, Seigneur des mondes", kind: "tr", lang: "fr" }] : []) });
+        window.__ready = true; }, 150));
+      return;
+    }
+    const o = Object.assign({ top: 300, bot: 360, deco: true, decoAlpha: .2, line: 6, bandColor: "theme:deep", lineColor: "theme:accent", titleSize: 70, nameSize: 68, noteSize: 44, titleColor: "#FFFFFF", nameColor: "#FFFFFF", titleFont: "", nameFont: "", noteFont: "" }, d);
+    const col = c => TH.col(c, t), clampH = v => Math.max(0, Math.min(700, Math.round(Number(v) || 0)));
+    const TOP = clampH(o.top), BOT = clampH(o.bot), MID_TOP = TOP, MID_BOT = 1920 - BOT;
+    const baseC = col(o.bandColor), lineC = col(o.lineColor), L = Math.max(0, Math.min(40, Number(o.line) || 0));
+    const ff = fam => fam ? '"' + fam + '", var(--fa)' : "var(--fa)";
+    // شريط زخرفيّ: لون الشريط + نقش الهويّة (اختياريّ) + خطّ مزدوج على الحافّة المجاورة للفيديو بسمك قابل للتعديل + معيّن في الوسط
+    const band = (top, h, edge) => {
+      if (h <= 0) return null;
+      const e = el("div", { left: 0, right: 0, top: top + "px", height: h + "px", overflow: "hidden", background: baseC }, b, "abs");
+      el("div", { inset: 0, background: "linear-gradient(" + (edge === "bottom" ? "0deg" : "180deg") + ", rgba(0,0,0,.45), rgba(0,0,0,0) 80%)" }, e, "abs");
+      if (o.deco !== false) {
+        pattern(e, { alpha: Number(o.decoAlpha ?? .2), scale: .85, move: false });
+        el("div", { left: 0, right: 0, [edge]: 0, height: "100%", background: "radial-gradient(70% 90% at 50% " + (edge === "bottom" ? "0%" : "100%") + ", " + TH.rgba(lineC, .16) + ", transparent 70%)" }, e, "abs");
+      }
+      if (L > 0) {
+        el("div", { left: 0, right: 0, [edge]: 0, height: L + "px", background: "linear-gradient(90deg, transparent, " + lineC + " 12%, " + lineC + " 88%, transparent)" }, e, "abs");
+        if (o.deco !== false) {
+          el("div", { left: "90px", right: "90px", [edge]: (L + 12) + "px", height: Math.max(2, Math.round(L / 3)) + "px", background: TH.rgba(lineC, .55) }, e, "abs");
+          const dz = 10 + Math.round(L * 1.1);
+          el("div", { left: "50%", [edge]: Math.max(0, L / 2 + 6 - dz / 2 + 6) + "px", width: dz + "px", height: dz + "px", transform: "translateX(-50%) rotate(45deg)", background: lineC, border: "3px solid " + baseC }, e, "abs");
+        }
+      }
+      return e;
+    };
+    const topB = band(0, TOP, "bottom"), botB = band(1920 - BOT, BOT, "top");
+    // الجزء الملاصق للفيديو من الشريطين ينتهي تدريجيّاً: لون الشريط يتلاشى فوق حافّة الفيديو بدل قطعة حادّة
+    const FADE = Math.max(0, Math.min(500, Number(o.fade ?? 150) || 0));
+    const fadeBg = dir => "linear-gradient(" + dir + ", " + baseC + " 0%, " + TH.rgba(baseC, .78) + " 22%, " + TH.rgba(baseC, .42) + " 52%, " + TH.rgba(baseC, .14) + " 80%, " + TH.rgba(baseC, 0) + " 100%)";
+    if (FADE > 0 && TOP > 0) el("div", { left: 0, right: 0, top: TOP + "px", height: FADE + "px", background: fadeBg("180deg") }, b, "abs");
+    if (FADE > 0 && BOT > 0) el("div", { left: 0, right: 0, top: (1920 - BOT - FADE) + "px", height: FADE + "px", background: fadeBg("0deg") }, b, "abs");
+    const sh = o.shadow === false ? "none" : "0 3px 14px rgba(0,0,0,.45)";
+    const put = (parent, txt, css, cls) => { if (!String(txt || "").trim()) return null; const e = el("div", Object.assign({ textShadow: sh, textAlign: "center", color: "#fff" }, css), parent, "box " + (cls || "")); e.textContent = AR(String(txt).trim()); return e; };
+    // الأعلى: اسم الدورة (بلا اسم الكتاب)
+    const course = d.title && String(d.title).trim() ? d.title : (T.programFull || T.book || "");
+    const len = String(course).length, cap = len > 60 ? 50 / 70 : len > 38 ? 58 / 70 : 1, tsz = Math.round((Number(o.titleSize) || 70) * cap);
+    if (topB) {
+      const tw = el("div", { left: "70px", right: "70px", top: "0", height: Math.max(40, TOP - L - 16) + "px", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }, topB, "abs");
+      put(tw, course, { font: "700 " + tsz + "px " + ff(o.titleFont), lineHeight: 1.35, color: o.titleColor || "#fff" });
+    }
+    // الأسفل: لقب الشيخ واسمه (+ سطر ختاميّ)
+    if (botB) {
+      const bw = el("div", { left: "70px", right: "70px", top: (L + 14) + "px", height: Math.max(40, BOT - L - 28) + "px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px" }, botB, "abs");
+      const ns = Number(o.nameSize) || 68, nf = ff(o.nameFont), nc = o.nameColor || "#fff";
+      if (d.showName !== false) { put(bw, T["sheikh-title"], { font: "500 " + Math.round(ns * .5) + "px " + nf, color: lineC }); put(bw, T.sheikh, { font: "700 " + ns + "px " + nf, color: nc, lineHeight: 1.25 }); put(bw, T["sheikh-post"], { font: "500 " + Math.round(ns * .44) + "px " + nf, color: lineC }); }
+      if (String(d.foot || "").trim()) put(bw, d.foot, { font: "700 " + Math.round(ns * .5) + "px " + nf, color: lineC, marginTop: "8px", direction: "ltr", unicodeBidi: "plaintext" });
+    }
+    // نصّ إضافيّ فوق الفيديو (اختياريّ) مع تظليل سفليّ خفيف
+    if (String(d.note || "").trim()) {
+      const pos = d.pos || "low";
+      if (d.scrim !== false && pos === "low") el("div", { left: 0, right: 0, top: (MID_BOT - 420) + "px", height: "420px", background: "linear-gradient(0deg, rgba(0,0,0,.62), rgba(0,0,0,0))" }, b, "abs");
+      const n = el("div", pos === "top" ? { top: (MID_TOP + 60) + "px" } : pos === "center" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: (BOT + 60) + "px" }, b, "abs2");
+      put(n, d.note, { font: "500 " + (Number(o.noteSize) || 44) + "px " + ff(o.noteFont), whiteSpace: "pre-line", lineHeight: 1.7 });
+    }
+    Promise.all(["TSD", "TS", "Amiri", o.titleFont, o.nameFont, o.noteFont].filter(Boolean).map(f => document.fonts.load('700 40px "' + f + '"', "أبجد").catch(() => {}))).then(() => document.fonts.ready).then(() => setTimeout(() => { window.__ready = true; }, 250));
+  });
+</script>
+</body></html>

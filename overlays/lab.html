@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>طبقات المعمل</title>
+<link rel="stylesheet" href="ov.css"></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script>
+<script>
+  // طبقات بسيطة يرسمها «معمل المجالس» على الفيديو: بطاقة اسم، عنوان، نصّ، شارة «المردود عليه».
+  // ?kind=lower&name=&role=&side=right|left | title&t=&s= | text&t=&pos=top|bottom | tag&t=
+  boot(S => {
+    const b = document.body, k = P("kind") || "lower", t = S._t, deep = t.deep || "#101820", st = (id, d) => { const e = el("div", d, b, "rise"); return e; };
+    const dark = MINBAR_THEMES.rgba(deep, .92), acc = t.accent;
+    if (k === "lower") {
+      const right = P("side") !== "left", name = P("name") || "", role = P("role") || "";
+      const box = el("div", { bottom: "70px", [right ? "right" : "left"]: "80px", display: "flex", alignItems: "stretch", maxWidth: "1200px", filter: "drop-shadow(0 10px 24px rgba(0,0,0,.45))" }, b, "abs rise");
+      const bar = el("div", { width: "10px", background: acc, borderRadius: "5px" }, box);
+      const inn = el("div", { padding: "12px 34px", background: dark, borderRadius: "10px", margin: "0 6px" }, box);
+      if (role) { const r = el("div", { font: "500 26px var(--fs)", color: "var(--accent-hi)", whiteSpace: "nowrap" }, inn); r.textContent = AR(role); }
+      const n = el("div", { font: "700 46px var(--fa)", color: "#fff", whiteSpace: "nowrap" }, inn); n.textContent = AR(name);
+    } else if (k === "title") {
+      const c = el("div", { inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", background: `radial-gradient(60% 50% at 50% 50%, ${MINBAR_THEMES.rgba(deep, .78)}, transparent 80%)` }, b, "abs");
+      const h = el("div", { font: "800 92px var(--fa)", color: "#fff", textAlign: "center", maxWidth: "1500px", textShadow: "0 4px 24px rgba(0,0,0,.6)" }, c, "rise"); h.textContent = AR(P("t") || "");
+      el("div", { width: "180px", height: "5px", background: acc, borderRadius: "5px" }, c);
+      if (P("s")) { const s = el("div", { font: "500 40px var(--fs)", color: "var(--accent-hi)", textAlign: "center" }, c, "rise"); s.textContent = AR(P("s")); }
+    } else if (k === "text") {
+      const top = P("pos") === "top", box = el("div", { left: 0, right: 0, [top ? "top" : "bottom"]: "60px", display: "flex", justifyContent: "center" }, b, "abs");
+      const x = el("div", { padding: "12px 38px", borderRadius: "14px", background: dark, border: "2px solid " + acc, font: "700 44px var(--fa)", color: "#fff", maxWidth: "1500px", textAlign: "center" }, box, "rise"); x.textContent = AR(P("t") || "");
+    } else if (k === "side") {            // نصّ في النصف الأيسر بجانب إطار المقطع المردود عليه
+      const c = el("div", { left: "1000px", top: 0, width: "820px", height: "1080px", display: "flex", flexDirection: "column", justifyContent: "center", gap: "22px", textAlign: "right" }, b, "abs");
+      const l = el("div", { font: "700 36px var(--fs)", color: "var(--accent-hi)" }, c, "rise"); l.textContent = AR(P("l") || "");
+      const h = el("div", { font: "800 70px var(--fa)", color: "var(--fg)", lineHeight: 1.35 }, c, "rise"); h.textContent = AR(P("t") || "");
+      el("div", { width: "160px", height: "5px", background: acc, borderRadius: "5px" }, c);
+      if (P("s")) { const s = el("div", { font: "500 36px var(--fs)", color: "var(--fg)", opacity: .8 }, c, "rise"); s.textContent = AR(P("s")); }
+    } else if (k === "tag") {
+      const box = el("div", { top: "60px", right: "80px", padding: "10px 30px", borderRadius: "12px", background: acc, font: "800 38px var(--fa)", color: t.light ? "#fff" : deep, boxShadow: "0 8px 24px rgba(0,0,0,.4)" }, b, "abs rise"); box.textContent = AR(P("t") || "");
+    }
+  });
+</script>
+</body></html>

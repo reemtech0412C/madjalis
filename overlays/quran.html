@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>آيات القرآن</title>
+<link rel="stylesheet" href="ov.css"></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script><script src="quranlib.js"></script>
+<script>
+  // طبقة الآيات (معرض القرآن الكريم): تعرض الآية الحاليّة من المصحف العثماني بخطّ مصحف، وتتبدّل بنعومة عند التنقّل آيةً آية.
+  // ?pos=bottom|top (شريط عريض أسفل/أعلى الشاشة) | side (لوحة بجانب القارئ بلا إطار) | frame (لوحة داخل إطار زخرفيّ) &box=x,y,w,h للّوحتين
+  const POS = P("pos") || "bottom", BOX = (P("box") || "").split(",").map(Number);
+  const FQ = '"Amiri","Amiri Quran","Scheherazade New",serif';
+  let stage = null, cur = "", layerOld = null;
+  const num = n => QU.AR(n);
+
+  function fit(txt, availFn, maxFs, minFs) {          // أكبر خطّ يتّسع في الارتفاع المتاح فعلاً (يُقاس من التخطيط)
+    let fs = maxFs; txt.style.fontSize = fs + "px";
+    while (txt.offsetHeight > availFn() && fs > minFs) { fs -= 2; txt.style.fontSize = fs + "px"; }
+    return fs;
+  }
+  function badge(parent, n, k = 1) {                    // علامة رقم الآية: دائرة مزخرفة بالرقم
+    const s = 60 * k, b = el("span", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: s + "px", height: s + "px", margin: "0 .35em", verticalAlign: "middle", position: "relative", direction: "ltr" }, parent);
+    b.innerHTML = `<svg viewBox="0 0 60 60" width="${s}" height="${s}" style="position:absolute;inset:0"><circle cx="30" cy="30" r="27" fill="none" stroke="var(--accent)" stroke-width="2.4"/><circle cx="30" cy="30" r="22" fill="none" stroke="var(--accent)" stroke-width="1" stroke-opacity=".55"/>${[...Array(12)].map((_, i) => `<circle cx="${30 + 27 * Math.cos(i * Math.PI / 6)}" cy="${30 + 27 * Math.sin(i * Math.PI / 6)}" r="2.3" fill="var(--accent)"/>`).join("")}</svg>`;
+    const t = el("span", { position: "relative", font: `700 ${(n > 99 ? 20 : 26) * k}px "Amiri",serif`, color: "var(--accent-hi)", lineHeight: 1 }, b); t.textContent = num(n);
+    return b;
+  }
+  function chip(parent, text, css) { const c = el("span", Object.assign({ padding: "6px 22px", borderRadius: "99px", font: "700 26px var(--fa)", color: "var(--accent-hi)", background: "rgba(0,0,0,.28)", border: "1.5px solid var(--accent)", whiteSpace: "nowrap" }, css || {}), parent); c.textContent = AR(text); return c; }
+
+  function render(S) {
+    const t = S._t, q = QU.clampRef(S.quran), c = S.quran, su = QU.sura(q.s), pt = QU.parts(q.s, q.a), part = pt[q.p] || pt[0], inf = QU.info(q.s, q.a);
+    const k = Math.max(.6, Math.min(1.5, (c.size || 100) / 100));
+    const L = el("div", { inset: 0, opacity: 0 }, stage, "abs");
+    const wide = POS === "bottom" || POS === "top";
+    const [bx, by, bw, bh] = wide ? [60, 0, 1800, 0] : (BOX.length === 4 && BOX[2] ? BOX : [70, 140, 1040, 800]);
+    const panel = el("div", { left: bx + "px", width: bw + "px", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }, L, "abs");
+    const dark = wide && t.light ? "#000000" : (t.deep || "#0b1a17");
+    if (wide) {
+      // أسفل/أعلى: آية بلا لوحة ولا إطار — تدرّج خفيف من حافّة الشاشة يُبرز النصّ فقط
+      const g = el("div", { left: 0, right: 0, height: "560px", pointerEvents: "none", background: `linear-gradient(${POS === "top" ? "180deg" : "0deg"}, ${MINBAR_THEMES.rgba(dark, .86)} 0%, ${MINBAR_THEMES.rgba(dark, .62)} 42%, ${MINBAR_THEMES.rgba(dark, .26)} 72%, transparent 100%)` }, L, "abs");
+      g.style[POS === "top" ? "top" : "bottom"] = 0;
+      L.insertBefore(g, panel);
+      panel.style.setProperty("--fg", "#ffffff"); panel.style.setProperty("--accent-hi", t.light ? MINBAR_THEMES.mix(t.accent, "#ffffff", .5) : (t.accentHi || t.accent));
+      Object.assign(panel.style, { padding: "0 70px", background: "none", border: "0", boxShadow: "none" });
+      panel.style[POS === "top" ? "top" : "bottom"] = POS === "top" ? "44px" : "48px";
+    } else {
+      panel.style.top = by + "px"; panel.style.height = bh + "px"; panel.style.padding = "28px 50px 26px";
+      if (POS === "frame") { Object.assign(panel.style, { background: `linear-gradient(160deg, ${MINBAR_THEMES.rgba(dark, .92)}, ${MINBAR_THEMES.rgba(dark, .8)})`, borderRadius: "34px", boxShadow: "0 24px 70px rgba(0,0,0,.5)" }); }
+    }
+    // رأس: اسم السورة + (البسملة/الآية)
+    const head = el("div", { display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", width: "100%", flexWrap: "wrap" }, panel);
+    if (c.head !== false) {
+      const sn = chip(head, "سورة " + su.name.replace(/^سورة\s*/, ""), Object.assign({ font: `700 ${30 * k}px "Amiri",serif` }, wide ? { border: "0", background: "none", padding: "0 6px", textShadow: "0 2px 10px rgba(0,0,0,.5)" } : {}));
+      if (c.info !== false) { const m = el("span", { font: `500 ${22 * k}px var(--fs)`, color: "var(--fg)", opacity: .75, whiteSpace: "nowrap" }, head); m.textContent = AR(`${su.type} · ${num(su.ayas.length)} آية · الجزء ${num(inf.juz)} · ص ${num(inf.page)}`); }
+    }
+    // النصّ
+    const body = el("div", { width: "100%", flex: wide ? "0 0 auto" : "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }, panel);
+    const txt = el("div", { width: "100%", textAlign: "center", direction: "rtl", fontFamily: FQ, lineHeight: 1.95, color: "var(--fg)", textWrap: "balance", overflow: "visible", wordSpacing: ".08em", textShadow: "0 2px 12px rgba(0,0,0,.45)" }, body);
+    txt.textContent = part.t;
+    if (!part.bsm && c.num !== false && q.p === pt.length - 1) badge(txt, q.a, k * (wide ? .9 : 1));
+    if (part.bsm) { txt.style.color = "var(--accent-hi)"; }
+    // أبعاد الخطّ: تُقاس بعد إضافة الصفّ إلى الصفحة
+    requestAnimationFrame(() => {
+      const maxFs = (wide ? 74 : 92) * k, minFs = 30;
+      const sp = el("div", { display: "flex", alignItems: "center", gap: "18px", width: "100%", justifyContent: "center" }, panel);
+      if (pt.length > 1 && !part.bsm) { const d = el("span", { font: `500 ${22 * k}px var(--fs)`, color: "var(--fg)", opacity: .72 }, sp); d.textContent = AR(`الآية ${num(q.a)} · جزء الآية ${num(q.p + 1 - (pt[0].bsm ? 1 : 0))} من ${num(pt.length - (pt[0].bsm ? 1 : 0))}`); }
+      // شريط تقدّم السورة
+      const bar = el("div", { flex: "1 1 auto", height: "5px", maxWidth: wide ? "520px" : "100%", borderRadius: "9px", background: "rgba(128,128,128,.28)", overflow: "hidden" }, sp);
+      el("i", { display: "block", height: "100%", width: (100 * q.a / su.ayas.length).toFixed(1) + "%", background: "var(--accent)", borderRadius: "9px", transition: "width .6s" }, bar);
+      const cnt = el("span", { font: `600 ${22 * k}px var(--fs)`, color: "var(--accent-hi)", whiteSpace: "nowrap" }, sp); cnt.textContent = AR(`الآية ${num(q.a)} من ${num(su.ayas.length)}`);
+      const f = fit(txt, () => wide ? 300 : body.clientHeight, part.bsm ? maxFs * .85 : maxFs, minFs);
+      if (c.fixed) txt.style.fontSize = f + "px";
+    });
+    if (POS === "frame") { const f = frameSVG("round", [bx - 8, by - 8, bw + 16, bh + 16], { sw: 3, inner: 12, parent: L }); f.style.filter = `drop-shadow(0 0 22px ${MINBAR_THEMES.rgba(t.accent, .45)})`; f.style.pointerEvents = "none"; }
+    return L;
+  }
+
+  boot(async S => {
+    await QU.load(); try { await document.fonts.load("400 40px Amiri", "ٱللَّهِ"); await document.fonts.ready; } catch {}
+    if (!stage || !stage.isConnected) { stage = el("div", { inset: 0 }, document.body, "abs"); stage.dataset.keep = 1; cur = ""; }
+    if (!S.quran) { stage.innerHTML = ""; cur = ""; return; }
+    const q = QU.clampRef(S.quran), key = JSON.stringify([q, S.quran.size, S.quran.num, S.quran.head, S.quran.info, S.design && S.design.theme, S.design && S.design.font, S._t && S._t.accent]);
+    if (key === cur) return; cur = key;
+    const old = layerOld, L = render(S); layerOld = L;
+    L.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 650, fill: "forwards", easing: "cubic-bezier(.2,.8,.2,1)", delay: old ? 180 : 0 });
+    if (old) old.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-10px)" }], { duration: 380, fill: "forwards" }).onfinish = () => old.remove();
+  });
+</script>
+</body></html>

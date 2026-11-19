@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>صوت التنقّلات</title></head>
+<body style="margin:0;background:transparent">
+<script src="themes.js"></script><script src="ov.js"></script>
+<script>
+  // صوت التنقّل بين المشاهد (البودكاست): مصدر متصفّح صامت يُضاف لكل المشاهد، يُشغِّل الملفّ فور وصول حدث «sfx» من البرنامج.
+  // مصدره يبقى حيّاً بين المشاهد (لا يُعاد تحميله) فيُسمَع الصوت في البثّ والتسجيل عبر مازج المحرّك.
+  boot(S => {});
+  let au = null;
+  listen((k, d) => {
+    if (k !== "sfx" || !d || !d.file) return;
+    if (!au) au = new Audio();
+    au.src = "/media/" + encodeURIComponent(d.file); au.volume = Math.max(0, Math.min(1, (d.vol ?? 70) / 100)); au.currentTime = 0;
+    au.play().catch(() => {});
+  });
+</script>
+</body></html>

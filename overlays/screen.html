@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>شاشة كاملة</title>
+<link rel="stylesheet" href="ov.css">
+<style>
+  body{background:var(--bg)}
+  .rise{opacity:0;animation:rise 1s cubic-bezier(.16,1,.3,1) forwards}
+  .in{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 70px}
+  .count{font:700 84px var(--fa);color:var(--accent-hi);direction:ltr}
+</style></head>
+<body>
+<script>(() => { const q = new URLSearchParams(location.search); if (q.get("tpl")) { const o = {}; for (const [k, v] of q) if (k !== "kind" && v) o[k === "tpl" ? "id" : k] = v; window.__PODOVR = o; } })();</script>
+<script src="themes.js"></script><script src="ov.js"></script><script src="podkit.js"></script>
+<script>
+  // ?kind=intro|break|outro — قبل البث (عدّ تنازليّ)، استراحة، ختام
+  function trimImage(src) {
+    return new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        try {
+          const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
+          const g = c.getContext("2d"); g.drawImage(im, 0, 0);
+          const d = g.getImageData(0, 0, w, h).data;
+          let x0 = w, y0 = h, x1 = -1, y1 = -1, transp = false;
+          for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+            const a = d[(y * w + xx) * 4 + 3];
+            if (a < 250) transp = true;
+            if (a > 12) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+          }
+          if (!transp || x1 < 0) return res(src);                 // صورة بخلفيّة مصمتة: تبقى كما هي
+          const tw = x1 - x0 + 1, th = y1 - y0 + 1, o = document.createElement("canvas"); o.width = tw; o.height = th;
+          o.getContext("2d").drawImage(c, x0, y0, tw, th, 0, 0, tw, th);
+          res(o.toDataURL("image/png"));
+        } catch { res(src); }
+      };
+      im.onerror = () => res(src);
+      im.src = src;
+    });
+  }
+  boot(S => {
+    const T = texts(), kind = P("kind") || "intro", b = document.body, t = S._t;
+    // تخصيص الشاشة (لكل حلقة): خلفيّة صورة + إطار البطاقة + صوت
+    const fx = ((S.screens || {})[kind] || {}).fx || {}, bgx = fx.bg || {}, cd = fx.card || {}, snd = fx.sound || {};
+    const C = c => MINBAR_THEMES.col(c, t);
+    const POD = S.mode === "podcast";                       // البودكاست: خلفيّة القالب وشاشاته الخاصّة (podScreen أدناه)
+    if (POD) PK.bg(b, S);
+    if (!POD && bgx.file) {
+      const blur = Math.max(0, Number(bgx.blur) || 0);
+      el("div", { inset: blur ? "-" + blur * 2 + "px" : 0, backgroundImage: "url(/media/" + encodeURIComponent(bgx.file) + ")", backgroundSize: "cover", backgroundPosition: "center", filter: blur ? "blur(" + blur + "px)" : "none" }, b, "abs");
+      el("div", { inset: 0, background: "rgba(0,0,0," + (Math.max(0, Math.min(90, bgx.dim ?? 35)) / 100) + ")" }, b, "abs");
+    }
+    if (!POD && (!bgx.file || bgx.pattern !== false)) pattern(b, { alpha: bgx.file ? .16 : .12 });
+    if (!POD && !bgx.file) el("div", { inset: 0, background: t.light ? "radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.1))"
+      : `radial-gradient(60% 70% at 50% 46%, ${t.hi}bf, transparent 70%), radial-gradient(120% 100% at 50% 50%, transparent 55%, ${t.deep}cc)` }, b, "abs");
+    // الصوت: عنصر واحد يبقى بين إعادات الرسم؛ المحرّك يسمعه فقط حين تكون الشاشة على الهواء (وتُعاد تحميلها عند ظهورها فيبدأ من أوّله)
+    { let au = document.getElementById("mb-audio");
+      if (snd.file) {
+        if (!au) { au = document.createElement("audio"); au.id = "mb-audio"; au.dataset.keep = "1"; au.loop = true; document.body.appendChild(au); }
+        if (au.dataset.f !== snd.file) { au.dataset.f = snd.file; au.src = "/media/" + encodeURIComponent(snd.file); }
+        au.volume = Math.max(0, Math.min(1, (snd.vol ?? 60) / 100));
+        au.play().catch(() => {});
+      } else if (au) { au.pause(); au.removeAttribute("src"); au.dataset.f = ""; }
+    }
+    // ===================== قوالب شاشة «قبل البثّ»: نسختان مطابقتان للنموذجين المرجعيّين =====================
+    // «إطار المحراب»: خلفيّة بيضاء + هالات خضراء + حلقة خضراء + لوحة اسم خضراء. «الشيخ بارزاً»: خلفيّة رماديّة فاتحة + لوح أبيض مائل + نصّ كحليّ.
+    // المقاسات والمحاذاة مأخوذة من النموذجين (بنسبة 1920×1080). اسم الكتاب لا يظهر: اسم الدورة هو العنوان.
+    const PALS = {
+      arch:   { bg: "#FFFFFF", ink: "#12482B", sub: "#3B6B50", accent: "#0F5A33", plate: "#0F5A33", plateInk: "#FFFFFF", plateSub: "#D5EBDD", halo: "#BFDCC8", photoA: "#FFFFFF", photoB: "#E3F0E8", bar: "#0F5A33" },
+      cutout: { bg: "#E9EBEF", ink: "#1B2A63", sub: "#33417A", accent: "#1B2A63", plate: "#111111", plateInk: "#FFFFFF", plateSub: "#E2E6F5", halo: "#FFFFFF", photoA: "#FFFFFF", photoB: "#E9EBEF", bar: "#C8102E" },
+    };
+    const FAMS = { naskh: "Noto Naskh Arabic", scheherazade: "Scheherazade New", elmessiri: "El Messiri", cairo: "Cairo", kufi: "Noto Kufi Arabic", alexandria: "Alexandria", mada: "Mada", almarai: "Almarai", changa: "Changa", reem: "Reem Kufi", aref: "Aref Ruqaa", amiri: "Amiri", tajawal: "Tajawal", plex: "IBM Plex Sans Arabic", thm: "TSD" };
+    // أيقونات التواصل: فيسبوك ويوتيوب وتيليجرام وتيك توك تظهر دائماً (والمعرّف بجانبها لو أُدخل)، وأيّ حسابات أخرى بمعرّف تُضاف بعدها. الحساب المُغلق يُخفى.
+    const SOC_DEF = ["facebook", "youtube", "telegram", "tiktok"];
+    const socialsOf = tp => { const accts = (S.socials || []).filter(Boolean);
+      return (tp || {}).socials === false ? [] : SOC_DEF.map(t => ({ t, a: accts.find(x => x.type === t) })).filter(x => !(x.a && x.a.on === false)).map(x => ({ type: x.t, handle: (x.a && x.a.handle) || "" }))
+        .concat(accts.filter(x => !SOC_DEF.includes(x.type) && x.handle && x.on !== false)).slice(0, 7); };
+    const ICON = {
+      telegram: '<path d="M4 11.6l16-6.4c.8-.3 1.5.2 1.3 1.3l-2.7 12.4c-.2.9-.8 1.1-1.5.7l-4.1-3-2 1.9c-.2.2-.4.4-.8.4l.3-4.2 7.6-6.9c.3-.3-.1-.5-.5-.2l-9.4 5.9-4-1.3c-.9-.3-.9-.9.2-1.3z" fill="currentColor"/>',
+      facebook: '<path d="M13.5 21v-7.8h2.6l.4-3.1h-3V8.3c0-.9.3-1.5 1.6-1.5h1.6V4a21 21 0 0 0-2.3-.1c-2.3 0-3.9 1.4-3.9 4v2.2H7.8v3.1h2.7V21z" fill="currentColor"/>',
+      instagram: '<rect x="4" y="4" width="16" height="16" rx="4.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16.6" cy="7.4" r="1.2" fill="currentColor"/>',
+      x: '<path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
+      tiktok: '<path d="M16.6 3h-2.9v12.2a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.6a5.6 5.6 0 1 0 4.7 5.5V9a6.9 6.9 0 0 0 4 1.3V7.3A4 4 0 0 1 16.6 3z" fill="currentColor"/>',
+      youtube: '<path fill-rule="evenodd" d="M21.2 8.1a2.4 2.4 0 0 0-1.7-1.7C18 6 12 6 12 6s-6 0-7.5.4A2.4 2.4 0 0 0 2.8 8.1C2.4 9.6 2.4 12 2.4 12s0 2.4.4 3.9a2.4 2.4 0 0 0 1.7 1.7C6 18 12 18 12 18s6 0 7.5-.4a2.4 2.4 0 0 0 1.7-1.7c.4-1.5.4-3.9.4-3.9s0-2.4-.4-3.9zM10 14.7V9.3l4.7 2.7z" fill="currentColor"/>',
+      whatsapp: '<path d="M4.5 19.5l1.2-4A7.8 7.8 0 1 1 9 18.4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.4 8.6c.5 2.3 2.6 4.4 5 5l1-1.1-1.8-1-.7.7c-.8-.3-1.6-1.1-1.9-1.9l.7-.7-1-1.8z" fill="currentColor"/>',
+      snapchat: '<path d="M12 4c2.6 0 4 1.9 4 4.3v1.6c.4.2 1 .2 1.5.1-.1.8-.9 1.1-1.5 1.3.3 1 1.2 1.9 2.5 2.2-.4.7-1.3.6-1.9.9-.2.6-.6 1.1-1.2 1.2-.6.1-1.1-.3-1.7-.3-.5 0-.9.9-1.7.9s-1.2-.9-1.7-.9c-.6 0-1.1.4-1.7.3-.6-.1-1-.6-1.2-1.2-.6-.3-1.5-.2-1.9-.9 1.3-.3 2.2-1.2 2.5-2.2-.6-.2-1.4-.5-1.5-1.3.5.1 1.1.1 1.5-.1V8.3C8 5.9 9.4 4 12 4z" fill="currentColor"/>',
+      linkedin: '<rect x="5" y="9.5" width="3" height="9" fill="currentColor"/><circle cx="6.5" cy="6.2" r="1.8" fill="currentColor"/><path d="M10.5 9.5h2.8v1.3c.5-.9 1.5-1.5 2.8-1.5 2.4 0 3 1.5 3 3.6v5.6h-3v-5c0-1.1-.3-1.8-1.3-1.8s-1.3.8-1.3 1.8v5h-3z" fill="currentColor"/>',
+      web: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 12h16M12 4c2.6 2.2 2.6 13.8 0 16M12 4c-2.6 2.2-2.6 13.8 0 16" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    };
+    const icon = (type, size, bgc, fgc) => { const d = el("div", { width: size + "px", height: size + "px", borderRadius: "50%", background: bgc, color: fgc, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }); d.innerHTML = '<svg viewBox="0 0 24 24" width="' + Math.round(size * .62) + '" height="' + Math.round(size * .62) + '">' + (ICON[type] || ICON.web) + '</svg>'; return d; };
+    const drawTemplate = tp => {
+      const TH2 = MINBAR_THEMES, light = !!t.light, id = tp.id === "cutout" ? "cutout" : "arch";
+      const themed = { bg: t.bg, ink: t.fg, sub: t.fg2, accent: t.accent, plate: light ? TH2.mix(t.accent, "#000000", .45) : t.deep, plateInk: "#FFFFFF", plateSub: light ? "#F1DFB5" : t.accentHi, halo: t.accent, photoA: t.hi, photoB: t.mid, bar: t.accent };
+      const pc = tp.useTheme ? themed : Object.assign({}, PALS[id], tp.colors || {});
+      // الخطوط: عناوين (نسخ سميك في الأوّل / كايرو في الثاني) ونصوص (كايرو)
+      const fT = '"' + (FAMS[tp.fontTitle] || (id === "arch" ? "Noto Naskh Arabic" : "Cairo")) + '",var(--fa),serif', fB = '"' + (FAMS[tp.fontBody] || "Cairo") + '",var(--fs),sans-serif';
+      const acc = pc.accent, ring = tp.ringColor ? C(tp.ringColor) : acc, shape = tp.shape || "arch";
+      const simg = (S.imgs || {}).sheikh, isCut = !!(S.imgs || {}).sheikhCut, logoImg = (S.imgs || {}).logo, logoCut = !!(S.imgs || {}).logoCut;
+      // هالة سوداء تدرّجيّة خفيفة تحفّ الجزء الحادّ من الصورة المقصوصة (بلا خلفيّة) فلا يظهر أثر القصّ على حوافّها
+      const eK = Number(tp.edgeA ?? 1), eR = Number(tp.edgeR ?? 1), eA = a => Math.min(.95, a * eK).toFixed(3);
+      const HALO = tp.edge === false || eK <= 0 ? "" : `drop-shadow(0 0 ${(4 * eR).toFixed(1)}px rgba(0,0,0,${eA(.5)})) drop-shadow(0 0 ${(18 * eR).toFixed(1)}px rgba(0,0,0,${eA(.3)})) drop-shadow(0 0 ${(44 * eR).toFixed(1)}px rgba(0,0,0,${eA(.16)}))`;
+      const author = tp.showAuthor === false ? "" : (S.bookAuthor || "");
+      const socials = socialsOf(tp);
+      const socText = tp.socialText ?? (id === "arch");
+      const showLogoT = !!((S.screens || {})[kind] || {}).logo;
+      if (!bgx.file) {
+        const isGrad = id === "cutout" && !tp.useTheme && !(tp.colors && tp.colors.bg);
+        el("div", { inset: 0, background: isGrad ? "linear-gradient(118deg, #F6F7F9 0%, #DDE0E6 62%, #CDD1D9 100%)" : pc.bg }, b, "abs");
+      }
+      const t1 = (txt, font, color, parent, css = {}) => { if (!String(txt || "").trim()) return null; const e = el("div", Object.assign({ font, color, textAlign: "center", lineHeight: 1.35 }, css), parent, "t"); e.style.whiteSpace = "normal"; e.textContent = AR(txt); return e; };
+      // ---- صورة الشيخ داخل إطار (محراب أو أيّ شكل)
+      const photoFrame = (FX, FY, FW, FH, plateBox) => {
+        const holder = el("div", { left: 0, top: 0, width: "1920px", height: "1080px" }, b, "abs");
+        const p = (w, h) => shapePath(shape, w, h, 0);
+        const halo = (k, a) => { const top = FY - 26 - k * .36, hh = (FY + FH - 40) - top; return '<path d="' + p(FW + 52 + k * 2, hh) + '" transform="translate(' + (FX - 26 - k) + ',' + top + ')" fill="url(#hg)" opacity="' + a + '"/>'; };
+        const draw = im => {
+          let img = "";
+          if (im) {
+            const iw = im.naturalWidth, ih = im.naturalHeight, z = Math.max(1, tp.zoom || 1), s = Math.max(FW / iw, FH / ih) * z, w = iw * s, h = ih * s;
+            const ox = tp.ox ?? .5, oy = tp.oy ?? (isCut ? 1 : .12);
+            const imgTag = '<image href="' + im.src + '" x="' + (FX + (FW - w) * ox) + '" y="' + (FY + (FH - h) * oy) + '" width="' + w + '" height="' + h + '"' + (isCut ? ' style="filter:' + HALO + '"' : '') + '/>';
+            img = '<g clip-path="url(#pc)">' + imgTag + '</g>';
+          }
+          holder.innerHTML = '<svg width="1920" height="1080" style="overflow:visible"><defs><clipPath id="pc"><path d="' + p(FW, FH) + '" transform="translate(' + FX + ',' + FY + ')"/></clipPath>' +
+            '<linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + pc.photoA + '"/><stop offset="1" stop-color="' + pc.photoB + '"/></linearGradient>' +
+            '<linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + pc.halo + '" stop-opacity=".85"/><stop offset="1" stop-color="' + pc.halo + '" stop-opacity=".10"/></linearGradient></defs>' +
+            (tp.halo === false ? "" : halo(190, .45) + halo(120, .65) + halo(62, .85)) +
+            (tp.ring === false ? "" : '<path d="' + p(FW + 52, FH + 52) + '" transform="translate(' + (FX - 26) + ',' + (FY - 26) + ')" fill="' + ring + '"/>' +
+              '<path d="' + p(FW + 22, FH + 22) + '" transform="translate(' + (FX - 11) + ',' + (FY - 11) + ')" fill="' + '#FFFFFF' + '"/>') +
+            '<path d="' + p(FW, FH) + '" transform="translate(' + FX + ',' + FY + ')" fill="url(#pg)"/>' + img + '</svg>';
+        };
+        if (simg) { const im = new Image(); im.onload = () => draw(im); im.onerror = () => draw(null); im.src = "/media/" + encodeURIComponent(simg); } else draw(null);
+        if (!simg) { const hint = el("div", { left: FX + "px", top: (FY + FH / 2 - 40) + "px", width: FW + "px", textAlign: "center", font: "500 26px " + fB, color: pc.sub }, b, "abs"); hint.textContent = "ارفع صورة الشيخ من «الشاشات»"; }
+        if (plateBox) {
+          const [px, py, pw] = plateBox, plate = el("div", { left: px + "px", top: py + "px", width: pw + "px", padding: "14px 26px 18px", boxSizing: "border-box", background: pc.plate, borderRadius: "26px", boxShadow: "0 16px 34px rgba(0,0,0,.20)", textAlign: "center" }, b, "abs rise");
+          t1(T["sheikh-title"] || "مع فضيلة الشيخ", "500 25px " + fB, pc.plateSub, plate); t1(T.sheikh, "700 56px " + fB, pc.plateInk, plate, { lineHeight: 1.25 }); t1(T["sheikh-post"], "500 25px " + fB, pc.plateSub, plate);
+        }
+      };
+      let cd = null;
+      const countdown = (parent, css) => {
+        if (tp.countdown === false) return;
+        const w = el("div", Object.assign({ display: "flex", alignItems: "baseline", gap: "14px", marginTop: "14px", direction: "rtl" }, css || {}), parent);
+        el("span", { font: "500 24px " + fB, color: pc.sub }, w).textContent = "يبدأ البثّ بعد";
+        cd = el("span", { font: "700 54px " + fB, color: acc, direction: "ltr" }, w); cd.className = "count"; cd.dataset.size = 54;
+      };
+      const logoCorner = (css, h) => { if (!showLogoT || !logoImg) return; const e = el("img", Object.assign({ height: (h || 120) + "px", maxWidth: "300px", objectFit: "contain", filter: logoCut ? HALO : "none" }, css), b, "abs rise"); e.src = "/media/" + encodeURIComponent(logoImg); e.onerror = () => e.remove(); };
+
+      if (id === "arch" || (!isCut && simg)) {
+        // ===== النموذج الأوّل (مقاسات النموذج): إطار المحراب 444×842 مركزه x=1437، النصّ مركزه x=730 ويبدأ عند y≈316، شريط أخضر بعرض الشاشة تقريباً
+        const FW = 392, FH = 790, FX = 1241, FY = 212;
+        photoFrame(FX, FY, FW, FH, [1136, 735, 570]);
+        const tb = el("div", { left: "290px", top: "290px", width: "880px", height: "600px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px" }, b, "abs rise");
+        if (tp.kicker) t1(tp.kicker, "700 38px " + fT, acc, tb);
+        t1(T.programFull, "700 66px " + fT, pc.ink, tb, { lineHeight: 1.3 });
+        t1(T.scope, "500 44px " + fT, pc.ink, tb, { lineHeight: 1.3 });
+        if (author) { t1("للعلّامة", "500 24px " + fB, pc.sub, tb, { marginTop: "22px" }); t1(author, "700 44px " + fT, acc, tb); }
+        const ses = T.session; if (ses) { const e = el("div", { padding: "10px 38px", background: pc.plate, borderRadius: "16px", marginTop: "26px" }, tb); t1(ses, "700 30px " + fB, pc.plateInk, e); }
+        countdown(tb);
+        logoCorner({ left: "113px", top: "90px" }, 124);
+        if (socials.length) { const row = el("div", { left: "104px", bottom: "40px", display: "flex", flexWrap: "nowrap", gap: "28px", direction: "ltr", alignItems: "center" }, b, "abs rise");
+          socials.forEach(sc => { const it = el("div", { display: "flex", alignItems: "center", gap: "10px" }, row); it.appendChild(icon(sc.type, 44, pc.accent, "#FFFFFF")); if (socText && sc.handle) el("span", { font: "600 24px " + fB, color: pc.ink }, it).textContent = sc.handle; }); }
+        el("div", { left: "188px", right: "30px", bottom: 0, height: "17px", background: pc.bar, borderRadius: "10px 10px 0 0" }, b, "abs");
+      } else {
+        // ===== النموذج الثاني: لوح أبيض مائل (يبدأ x≈1390 أعلى و1650 أسفل) + الشيخ بارزاً x=860..1740 + العنوان مركزه x=600 + اسم الشيخ محاذٍ لليمين عند x=855
+        el("div", { left: "1300px", top: 0, width: "620px", height: "1080px", clipPath: "polygon(15% 0, 100% 0, 100% 100%, 57% 100%)", background: "linear-gradient(110deg, #D5D8DF, #F4F5F8 45%)" }, b, "abs");
+        el("div", { left: "1390px", top: 0, width: "530px", height: "1080px", clipPath: "polygon(0 0, 100% 0, 100% 100%, 49% 100%)", background: "#FFFFFF" }, b, "abs");
+        if (simg) { const im = el("img", { left: "860px", bottom: 0, width: "880px", height: "1000px", objectFit: "contain", objectPosition: "center bottom", filter: (isCut ? HALO + " " : "") + "drop-shadow(0 16px 30px rgba(0,0,0,.25))" }, b, "abs rise"); im.src = "/media/" + encodeURIComponent(simg); im.onerror = () => im.remove(); }
+        else { const hint = el("div", { left: "1000px", top: "500px", width: "700px", textAlign: "center", font: "500 28px " + fB, color: pc.sub }, b, "abs"); hint.textContent = "ارفع صورة الشيخ (يُفضَّل بلا خلفيّة) من «الشاشات»"; }
+        const tt = el("div", { left: "150px", top: "220px", width: "900px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }, b, "abs rise");
+        if (tp.kicker) t1(tp.kicker, "700 38px " + fT, pc.sub, tt);
+        t1(T.programFull, "800 " + (String(T.programFull || "").length > 34 ? 62 : 74) + "px " + fT, pc.ink, tt, { lineHeight: 1.28 });
+        if (T.scope) t1('"' + T.scope + '"', "500 48px " + fB, pc.ink, tt, { lineHeight: 1.35 });
+        const nmLen = String(T.sheikh || "").length;
+        const sh = el("div", { left: "215px", top: "610px", width: "640px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px", textAlign: "right" }, b, "abs rise");
+        t1(T["sheikh-title"] || "فضيلة الشيخ", "500 46px " + fB, pc.ink, sh, { textAlign: "right" });
+        t1(T.sheikh, "800 " + (nmLen > 20 ? 54 : nmLen > 13 ? 64 : 80) + "px " + fT, acc, sh, { textAlign: "right", lineHeight: 1.2 });
+        t1(T["sheikh-post"], "500 32px " + fB, pc.sub, sh, { textAlign: "right" });
+        logoCorner({ left: "131px", top: "128px" }, 96);
+        const col = el("div", { left: "100px", width: "1000px", bottom: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }, b, "abs rise");
+        const ses = T.session; const info = el("div", { display: "flex", alignItems: "baseline", gap: "26px", direction: "rtl" }, col);
+        if (ses) t1(ses, "600 28px " + fB, pc.sub, info);
+        countdown(info, { marginTop: 0 }); if (cd) { cd.style.fontSize = "40px"; cd.dataset.size = 40; }
+        if (socials.length) { const row = el("div", { display: "flex", flexWrap: "nowrap", gap: "16px", direction: "ltr", alignItems: "center" }, col); socials.forEach(sc => { const it = el("div", { display: "flex", alignItems: "center", gap: "8px" }, row); it.appendChild(icon(sc.type, 44, acc, "#FFFFFF")); if (socText && sc.handle) el("span", { font: "600 21px " + fB, color: pc.ink }, it).textContent = sc.handle; }); }
+        if (T.halaqa || T.mosque) { const o = el("div", { display: "flex", alignItems: "center", gap: "20px" }, col); el("div", { width: "80px", height: "2px", background: pc.sub, opacity: .6 }, o); el("span", { font: "700 28px " + fT, color: pc.ink }, o).textContent = AR(T.halaqa || T.mosque); el("div", { width: "80px", height: "2px", background: pc.sub, opacity: .6 }, o); }
+      }
+      clearInterval(window.__t);
+      if (cd) { const sz = +cd.dataset.size; const tk = () => { const s = countdownTo(T.start); cd.textContent = s == null ? "" : s > 0 ? mmss(s) : "يبدأ الآن"; cd.style.fontSize = (s > 0 ? sz : sz * .6) + "px"; }; tk(); window.__t = setInterval(tk, 500); }
+    };
+    // ===================== شاشات البودكاست: قبل الحلقة | استراحة | ختام =====================
+    const podScreen = () => {
+      const c = PK.cfg(S), pp = PK.people(T), ac = t.accent, inkOn = t.light ? "#FFFFFF" : t.deep, rg = PK.rgba;
+      const imgs = S.imgs || {}, socials = socialsOf(c.show.social === false ? { socials: false } : {});
+      const wrap = (css, cls) => el("div", css, b, cls || "abs");
+      const fit = (node, maxW) => { const w = node.scrollWidth; if (w > maxW) node.style.fontSize = Math.max(24, parseFloat(node.style.fontSize) * maxW / w) + "px"; return node; };
+      const chip = (parent, text) => { const e = el("div", { padding: "8px 30px", borderRadius: "99px", background: ac, color: inkOn, font: "700 32px var(--fs)", whiteSpace: "nowrap" }, parent); e.textContent = AR(text); return e; };
+      const brand = (parent, size) => {
+        const row = el("div", { display: "flex", alignItems: "center", gap: size * .28 + "px", maxWidth: "1500px" }, parent);
+        const br = PK.brandOf(S);
+        if (br) { const i = el("img", { height: Math.round(size * (br.replace ? 1.45 : 1.05) * br.h / 90) + "px", maxWidth: br.replace ? "1200px" : "420px", objectFit: "contain" }, row); i.src = "/media/" + encodeURIComponent(br.file); i.onerror = () => i.replaceWith(PK.micIcon(size, ac, inkOn)); }
+        else row.appendChild(PK.micIcon(size, ac, inkOn));
+        if (!(br && br.replace)) { const n = el("div", { font: "700 " + size * .84 + "px var(--fa)", color: "var(--fg)", whiteSpace: "nowrap" }, row); n.textContent = AR(T.programFull || "بودكاست"); fit(n, 1350); }
+        return row;
+      };
+      const socRow = (css, withText) => { if (!socials.length) return null; const r = el("div", Object.assign({ display: "flex", gap: "30px", direction: "ltr", alignItems: "center", justifyContent: "center", flexWrap: "nowrap" }, css), b, "abs rise");
+        socials.forEach(sc => { const it = el("div", { display: "flex", alignItems: "center", gap: "10px" }, r); it.appendChild(icon(sc.type, 46, ac, inkOn)); if (withText && sc.handle) el("span", { font: "600 26px var(--fs)", color: "var(--fg)" }, it).textContent = sc.handle; }); return r; };
+      const photo = (src, size, name) => {
+        const d = el("div", { width: size + "px", height: size + "px", borderRadius: "50%", flex: "none", overflow: "hidden", border: "5px solid " + ac, boxSizing: "border-box", background: rg(t.deep, .9), display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 36px rgba(0,0,0,.35)" });
+        if (src) { const i = el("img", { width: "100%", height: "100%", objectFit: "cover" }, d); i.src = "/media/" + encodeURIComponent(src); i.onerror = () => { i.remove(); d.textContent = ""; };
+        } else { const ch = String(name || "").replace(/^(الشيخ|الدكتور|الأستاذ|الاستاذ|د\.|أ\.|فضيلة|العلّامة|الإعلاميّ|الإعلامي|المهندس)\s+/g, "").trim().charAt(0) || "؟"; el("span", { font: "700 " + size * .46 + "px var(--fa)", color: ac }, d).textContent = AR(ch); }
+        return d;
+      };
+      const card = (px, who, src) => {
+        const p = pp[who]; if (!p.name) return null;
+        const el0 = el("div", { display: "flex", alignItems: "center", gap: "26px", width: "640px", height: "250px", padding: "0 34px", boxSizing: "border-box", borderRadius: "38px", background: t.light ? "rgba(255,255,255,.65)" : "rgba(255,255,255,.09)", border: "1.5px solid " + rg(ac, .55), backdropFilter: "blur(10px)", boxShadow: "0 22px 56px rgba(0,0,0,.3)" }, px, "rise");
+        el0.appendChild(photo(src, 188, p.name));
+        const tx = el("div", { display: "flex", flexDirection: "column", gap: "8px", minWidth: 0 }, el0);
+        const r = el("div", { font: "500 26px var(--fs)", color: "var(--accent-hi)" }, tx); r.textContent = AR(p.role);
+        const nm = el("div", { font: "700 48px var(--fa)", color: "var(--fg)", whiteSpace: "nowrap", lineHeight: 1.25 }, tx); nm.textContent = AR(p.name); fit(nm, 340);
+        return el0;
+      };
+      let tick = null;
+      if (kind === "intro") {
+        const lay = c.layout || "cards";
+        const cdBox = (css, size, align) => { const cd = wrap(Object.assign({ display: "flex", alignItems: "baseline", justifyContent: align || "center", gap: "20px", direction: "rtl" }, css), "abs rise");
+          const lab = el("span", { font: "500 28px var(--fs)", color: "var(--fg2)" }, cd); lab.textContent = "يبدأ البثّ بعد"; const num = el("span", { font: "700 " + size + "px var(--fs)", color: ac, direction: "ltr" }, cd);
+          tick = () => { const s2 = countdownTo(T.start); num.textContent = s2 == null ? "" : s2 > 0 ? mmss(s2) : "يبدأ الآن"; num.style.fontSize = (s2 > 0 ? size : size * .66) + "px"; lab.style.display = s2 > 0 ? "" : "none"; }; return cd; };
+        const eqs = () => { if (c.show.eq) { PK.eq(b, { left: "90px", bottom: "56px" }, { n: 11, w: 9, h: 96 }); PK.eq(b, { right: "90px", bottom: "56px" }, { n: 11, w: 9, h: 96 }); } };
+        const portrait = (who, src, w, h) => { const p = pp[who]; if (!p.name) return null;
+          const d = el("div", { position: "relative", width: w + "px", height: h + "px", borderRadius: "42px", overflow: "hidden", border: "3px solid " + rg(ac, .75), boxShadow: "0 26px 64px rgba(0,0,0,.42)", background: rg(t.deep, .92), flex: "none" });
+          if (src) { const i = el("img", { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }, d); i.src = "/media/" + encodeURIComponent(src); i.onerror = () => i.remove(); }
+          else { const ch = String(p.name).replace(/^(الشيخ|الدكتور|الأستاذ|الاستاذ|د\.|أ\.|فضيلة|العلّامة|المهندس)\s+/g, "").trim().charAt(0) || "؟"; el("span", { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", font: "700 " + h * .42 + "px var(--fa)", color: ac }, d).textContent = AR(ch); }
+          const cap = el("div", { position: "absolute", left: 0, right: 0, bottom: 0, padding: "70px 22px 22px", background: "linear-gradient(0deg," + rg(t.deep, .94) + "," + rg(t.deep, 0) + ")", textAlign: "center" }, d);
+          const r = el("div", { font: "500 24px var(--fs)", color: "var(--accent-hi)" }, cap); r.textContent = AR(p.role);
+          const nm = el("div", { font: "700 44px var(--fa)", color: "var(--fg)", whiteSpace: "nowrap", lineHeight: 1.3 }, cap); nm.textContent = AR(p.name); fit(nm, w - 44); return d; };
+        const circ = (who, src, size) => { const p = pp[who]; if (!p.name) return null; const col = el("div", { display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: size + 120 + "px" }); col.appendChild(photo(src, size, p.name));
+          const r = el("div", { font: "500 26px var(--fs)", color: "var(--accent-hi)", textAlign: "center" }, col); r.textContent = AR(p.role);
+          const nm = el("div", { font: "700 50px var(--fa)", color: "var(--fg)", whiteSpace: "nowrap", textAlign: "center" }, col); nm.textContent = AR(p.name); return col; };
+        if (lay === "split") {
+          // نصّ على اليمين ووجهان كبيران على اليسار
+          const col = wrap({ right: "110px", width: "800px", top: "70px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "20px" }, "abs rise");
+          brand(col, 84); if (T.tagline) el("div", { font: "500 28px var(--fs)", color: "var(--accent-hi)" }, col).textContent = AR(T.tagline);
+          const tc = el("div", { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "22px", marginTop: "60px" }, col);
+          if (c.show.ep && T.episode) chip(tc, "الحلقة " + T.episode);
+          if (T.topic) { const tp2 = el("div", { font: "700 82px var(--fa)", color: "var(--fg)", lineHeight: 1.3, maxWidth: "800px", textAlign: "right" }, tc); tp2.textContent = AR(T.topic); }
+          cdBox({ right: "110px", width: "800px", top: "800px" }, 76, "flex-start");
+          socRow({ right: "110px", width: "800px", top: "968px", justifyContent: "flex-start" }, false);
+          const ph = wrap({ left: "90px", top: "130px", display: "flex", gap: "34px" }); const p1 = portrait("host", imgs.sheikh, 380, 720); if (p1) ph.appendChild(p1); const p2 = pp.guest.name ? portrait("guest", imgs.guest, 380, 720) : null; if (p2) ph.appendChild(p2);
+        } else if (lay === "poster") {
+          const hd = wrap({ left: 0, right: 0, top: "34px", display: "flex", justifyContent: "center" }, "abs rise"); brand(hd, 66);
+          const mid = wrap({ left: "140px", right: "140px", top: "150px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", textAlign: "center" }, "abs rise");
+          if (c.show.ep && T.episode) chip(mid, "الحلقة " + T.episode);
+          if (T.topic) { const tp2 = el("div", { font: "700 96px var(--fa)", color: "var(--fg)", lineHeight: 1.25, maxWidth: "1600px" }, mid); tp2.textContent = AR(T.topic); }
+          const row = wrap({ left: 0, right: 0, top: "520px", display: "flex", justifyContent: "center", alignItems: "flex-start", gap: pp.guest.name ? "60px" : "0" });
+          row.appendChild(circ("host", imgs.sheikh, 270)); if (pp.guest.name) row.appendChild(circ("guest", imgs.guest, 270));
+          cdBox({ left: 0, right: 0, top: "920px" }, 54); socRow({ left: 0, right: 0, top: "1010px" }, false); eqs();
+        } else if (lay === "center") {
+          const head = wrap({ left: 0, right: 0, top: "50px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }, "abs rise");
+          brand(head, 100); if (T.tagline) el("div", { font: "500 28px var(--fs)", color: "var(--accent-hi)" }, head).textContent = AR(T.tagline);
+          const mid = wrap({ left: "140px", right: "140px", top: "282px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center" }, "abs rise");
+          if (c.show.ep && T.episode) chip(mid, "الحلقة " + T.episode);
+          if (T.topic) { const tp2 = el("div", { font: "700 80px var(--fa)", color: "var(--fg)", lineHeight: 1.3, maxWidth: "1500px", position: "relative" }, mid); tp2.textContent = AR(T.topic); }
+          const row = wrap({ left: 0, right: 0, top: "540px", display: "flex", justifyContent: "center", alignItems: "flex-start", gap: pp.guest.name ? "190px" : "0" });
+          row.appendChild(circ("host", imgs.sheikh, 200)); if (pp.guest.name) row.appendChild(circ("guest", imgs.guest, 200));
+          cdBox({ left: 0, right: 0, top: "872px" }, 54); socRow({ left: 0, right: 0, top: "1004px" }, false); eqs();
+        } else {
+          const head = wrap({ left: 0, right: 0, top: "54px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }, "abs rise");
+          brand(head, 96);
+          if (T.tagline) el("div", { font: "500 28px var(--fs)", color: "var(--accent-hi)" }, head).textContent = AR(T.tagline);
+          const mid = wrap({ left: "150px", right: "150px", top: "262px", display: "flex", flexDirection: "column", alignItems: "center", gap: "22px", textAlign: "center" }, "abs rise");
+          if (c.show.ep && T.episode) chip(mid, "الحلقة " + T.episode);
+          if (T.topic) { const tp = el("div", { font: "700 70px var(--fa)", color: "var(--fg)", lineHeight: 1.3, maxWidth: "1500px" }, mid); tp.textContent = AR(T.topic); }
+          const row = wrap({ left: 0, right: 0, top: "560px", display: "flex", justifyContent: "center", alignItems: "center", gap: "70px" });
+          card(row, "host", imgs.sheikh);
+          if (pp.guest.name) { const x = el("div", { width: "70px", height: "70px", borderRadius: "50%", border: "2px solid " + rg(ac, .6), color: ac, font: "700 40px var(--fs)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }, row); x.textContent = "×"; card(row, "guest", imgs.guest); }
+          cdBox({ left: 0, right: 0, top: "862px" }, 78);
+          socRow({ left: 0, right: 0, top: "988px" }, false); eqs();
+        }
+      } else if (kind === "break") {
+        brand(wrap({ left: 0, right: 0, top: "56px", display: "flex", justifyContent: "center" }, "abs rise"), 80);
+        const mid = wrap({ left: 0, right: 0, top: "230px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", textAlign: "center" }, "abs rise");
+        el("div", { font: "700 150px var(--fa)", color: "var(--fg)", lineHeight: 1.1 }, mid).textContent = "استراحة";
+        el("div", { font: "500 36px var(--fs)", color: "var(--accent-hi)" }, mid).textContent = "نعود إليكم بعد";
+        const num = el("div", { font: "700 170px var(--fs)", color: ac, direction: "ltr", lineHeight: 1.1, marginTop: "6px" }, mid);
+        const end = (S.breakAt || Date.now()) + Number(T["break-min"] || 10) * 60000;
+        tick = () => { const s = Math.round((end - Date.now()) / 1000); num.textContent = s > 0 ? mmss(s) : "نستأنف الآن"; num.style.fontSize = s > 0 ? "170px" : "86px"; };
+        PK.eq(b, { left: "50%", bottom: "150px", transform: "translateX(-50%)" }, { n: 17, w: 14, h: 150, gap: 12 });
+        socRow({ left: 0, right: 0, top: "980px" }, false);
+      } else {
+        brand(wrap({ left: 0, right: 0, top: "56px", display: "flex", justifyContent: "center" }, "abs rise"), 80);
+        const mid = wrap({ left: "140px", right: "140px", top: "250px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center" }, "abs rise");
+        el("div", { font: "700 128px var(--fa)", color: "var(--fg)", lineHeight: 1.15 }, mid).textContent = "شكراً لمتابعتكم";
+        if (T.episode) chip(mid, "الحلقة " + T.episode);
+        if (T.topic) el("div", { font: "500 44px var(--fs)", color: "var(--accent-hi)", lineHeight: 1.45 }, mid).textContent = AR(T.topic);
+        const nx = String(T.next || "").trim() || "موعدنا القادم بإذن الله"; el("div", { font: "700 54px var(--fa)", color: "var(--fg)", lineHeight: 1.4, marginTop: "16px" }, mid).textContent = AR(nx);
+        socRow({ left: 0, right: 0, top: "900px" }, true);
+        if (c.show.eq) PK.eq(b, { left: "50%", bottom: "46px", transform: "translateX(-50%)" }, { n: 15, w: 10, h: 70, gap: 10 });
+      }
+      PK.logoLayer(b, S, kind);
+      clearInterval(window.__t); if (tick) { tick(); window.__t = setInterval(tick, 500); }
+    };
+    if (POD) { podScreen(); return; }
+    if (kind === "intro" && fx.tpl && (fx.tpl.id === "arch" || fx.tpl.id === "cutout")) {
+      const fams = ["Noto Naskh Arabic", "Cairo", "Scheherazade New", "El Messiri", "Noto Kufi Arabic", "Alexandria", "Mada", "Almarai", "Changa", "Reem Kufi", "Aref Ruqaa"];
+      Promise.all(fams.map(f => document.fonts.load('700 30px "' + f + '"', "أبجد").catch(() => {}))).then(() => drawTemplate(fx.tpl));
+      return;
+    }
+    // شعار الحلقة بحجم بطاقة المجلس نفسه (780×790) على يمين البطاقة، والمجموعة كلها في الوسط
+    const showLogo = !!((S.screens || {})[kind] || {}).logo && !!(S.imgs || {}).logo;
+    const MW = 780, MH = 790, my = 96, GAP = 40;
+    const x0 = (W - (showLogo ? MW * 2 + GAP : MW)) / 2, mx = x0;
+    if (showLogo) {
+      const box = el("div", { left: (mx + MW + GAP) + "px", top: my + "px", width: MW + "px", height: MH + "px", display: "flex", alignItems: "center", justifyContent: "center", animationDelay: ".3s" }, b, "abs rise");
+      const img = el("img", { width: "100%", height: "100%", objectFit: "contain", filter: ((S.imgs || {}).logoCut ? "drop-shadow(0 0 4px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(0,0,0,.3)) drop-shadow(0 0 44px rgba(0,0,0,.16)) " : "") + "drop-shadow(0 30px 60px rgba(0,0,0,.35))" }, box);
+      // يُقصّ الهامش الشفّاف حول الشعار ليملأ إطاره بالضبط (نفس مقاس بطاقة الكتاب وعلى نفس الخطّ)، فيتحاذى معها حافّةً بحافّة
+      const url = "/media/" + encodeURIComponent(S.imgs.logo);
+      img.onerror = () => box.remove();
+      img.style.visibility = "hidden";
+      trimImage(url).then(u => { img.onload = () => { img.style.visibility = "visible"; }; img.src = u; });
+    }
+    // بطاقة الكتاب: الشكل واللون والحدّ والظلّ قابلة للتخصيص (الافتراضيّ: المحراب كما كان)
+    const shp = cd.shape || "arch", bw = cd.border && cd.border.on === false ? 0 : ((cd.border && cd.border.width) || 3), bc = C((cd.border && cd.border.color) || "theme:accent");
+    const fillC = cd.fill ? MINBAR_THEMES.rgba(C(cd.fill.color || "theme:deep"), cd.fill.alpha ?? .82) : (t.light ? "rgba(255,255,255,.7)" : t.deep + "d1");
+    const dPath = (w, h) => shp === "arch" ? archPath(w, h, w * .46) : shapePath(shp, w, h, 0);
+    const TOP = { arch: .296, ogee: .33, dome: .24, round: .07, rect: .07, chamfer: .08, octagon: .09, hexagon: .14, pill: .1, oval: .14, circle: .17 }, PADX = { circle: 130, oval: 110, hexagon: 90, ogee: 80, pill: 90 };
+    const medal = el("div", { left: mx + "px", top: my + "px", width: MW + "px", height: MH + "px" }, b, "abs rise");
+    medal.innerHTML = `<svg width="${MW}" height="${MH}" style="display:block;overflow:visible;${cd.shadow === false ? "" : "filter:drop-shadow(0 30px 60px rgba(0,0,0,.35))"}">
+      <path d="${dPath(MW, MH)}" fill="${fillC}" stroke="${bc}" stroke-width="${bw}"/>
+      ${cd.outer === false ? "" : `<path d="${dPath(MW + 32, MH + 32)}" transform="translate(-16,-16)" fill="none" stroke="${bc}" stroke-opacity=".42"/>`}</svg>`;
+    const cardSoc = socialsOf(fx.tpl), SOCH = cardSoc.length ? 92 : 0;
+    const topOff = (TOP[shp] ?? .296) * MH;
+    const inn = el("div", { left: mx + "px", top: (my + topOff) + "px", width: MW + "px", height: (MH - topOff - (shp === "arch" ? 0 : MH * .05) - SOCH) + "px", padding: "0 " + (PADX[shp] || 70) + "px" }, b, "abs in");
+    if (cardSoc.length) {
+      // أيقونات التواصل في أسفل البطاقة: سطر واحد بحجم موحّد ومحاذاة وسطيّة
+      const round = ["circle", "oval", "hexagon", "octagon", "pill"].includes(shp), fgc = t.light ? "#FFFFFF" : t.deep;
+      const sr = el("div", { left: mx + "px", width: MW + "px", top: (my + MH - (round ? 130 : 78)) + "px", display: "flex", justifyContent: "center", flexWrap: "nowrap", gap: "22px", direction: "ltr", alignItems: "center", animationDelay: ".7s" }, b, "abs rise");
+      cardSoc.forEach(sc => { const it = el("div", { display: "flex", alignItems: "center", gap: "8px" }, sr); it.appendChild(icon(sc.type, 44, bc, fgc)); if ((fx.tpl || {}).socialText && sc.handle) el("span", { font: "600 20px var(--fs)", color: "var(--fg)" }, it).textContent = sc.handle; });
+    }
+    const line = (txt, font, color = "var(--fg)", mt = 0, d = 0) => { if (!txt) return; const n = el("div", { font, color, marginTop: mt + "px", animationDelay: d + "s" }, inn, "rise"); n.textContent = AR(txt); return n; };
+    const orn = d => { const o = el("div", { width: "56%", margin: "22px auto", animationDelay: d + "s" }, inn, "orn rise"); el("i", {}, o); };
+    let tick = null;
+    if (kind === "intro") {
+      line(T.programFull, "700 48px var(--fa)", "var(--fg)", 0, .15);
+      line(sameTitle(T.program, T.book) ? "" : T.book, "500 24px var(--fs)", "var(--accent-hi)", 10, .25);
+      orn(.35);
+      line(T["sheikh-title"], "500 22px var(--fs)", "var(--accent-hi)", 0, .45);
+      line(T.sheikh, "700 46px var(--fa)", "var(--fg)", 2, .5);
+      line(T["sheikh-post"], "500 20px var(--fs)", "var(--fg2)", 2, .52);
+      line([T.scope, T.session].filter(Boolean).join(" · "), "500 22px var(--fs)", "var(--fg2)", 14, .6);
+      const c = line(" ", "700 70px var(--fa)", "var(--accent-hi)", 20, .7); c.classList.add("count");
+      tick = () => { const s = countdownTo(T.start); c.textContent = s == null ? "" : s > 0 ? mmss(s) : "يبدأ الآن"; c.style.fontSize = s > 0 ? "66px" : "40px"; };
+    } else if (kind === "break") {
+      line("استراحة", "700 72px var(--fa)", "var(--fg)", 0, .15);
+      orn(.3);
+      line("نعود إليكم بعد", "500 24px var(--fs)", "var(--accent-hi)", 0, .4);
+      const c = line(" ", "700 84px var(--fa)", "var(--accent-hi)", 8, .5); c.classList.add("count");
+      const end = (S.breakAt || Date.now()) + Number(T["break-min"] || 10) * 60000;
+      tick = () => { const s = Math.round((end - Date.now()) / 1000); c.textContent = s > 0 ? mmss(s) : "نستأنف الآن"; c.style.fontSize = s > 0 ? "84px" : "42px"; };
+      line(T.programFull, "500 22px var(--fs)", "var(--fg2)", 18, .6);
+    } else {
+      line("جزاكم الله خيراً", "700 64px var(--fa)", "var(--fg)", 0, .15);
+      line("وبارك في علمكم وأوقاتكم", "500 24px var(--fs)", "var(--accent-hi)", 10, .25);
+      orn(.35);
+      line(T.next || "تابعونا في المجلس القادم بإذن الله", "700 34px var(--fa)", "var(--fg)", 0, .45);
+      line(T.programFull, "500 22px var(--fs)", "var(--fg2)", 14, .55);
+    }
+    const top = el("div", { left: 0, right: 0, top: "34px", textAlign: "center", font: "500 22px var(--fs)", color: "var(--fg2)" }, b, "abs rise");
+    top.textContent = AR([T.mosque, T.date].filter(Boolean).join("  ·  "));
+    // شعارات الجهة والرعاة لا تظهر في «قبل البثّ» و«الاستراحة» و«الختام»: الشعار الظاهر فيها هو شعار الحلقة وحده
+    const q = el("div", { left: "60px", bottom: "36px", animationDelay: "1s" }, b, "abs rise"); qr(q, 132);
+    clearInterval(window.__t); if (tick) { tick(); window.__t = setInterval(tick, 500); }
+  });
+</script>
+</body></html>

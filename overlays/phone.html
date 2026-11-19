@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar"><head><meta charset="utf-8"><title>كاميرا الهاتف</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<script>
+  // يستقبل بثّ H.264 من «المجالس» (WebSocket) ويفكّه بـ WebCodecs ويرسمه بحجمه الأصليّ (بعد تدوير الصورة لتكون منتصبة).
+  // حجم مصدر المتصفّح في OBS يُضبط من البرنامج ليطابق حجم الصورة، فتعمل معه كل أدوات التأطير والقصّ.
+  const role = new URLSearchParams(location.search).get("role") || "sheikh";
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d", { alpha: false, desynchronized: true });
+  let ws = null, dec = null, cfg = null, needKey = true, lastKeyReq = 0;
+  const log = m => { try { fetch("/log?m=" + encodeURIComponent("phone.html " + m)); } catch {} };
+
+  function clear() { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height); }
+
+  function setup(c) {
+    cfg = c;
+    const swap = c.rot === 90 || c.rot === 270;
+    cv.width = swap ? c.h : c.w; cv.height = swap ? c.w : c.h;               // الصورة المنتصبة
+    clear();
+    try { dec && dec.close(); } catch {}
+    dec = new VideoDecoder({ output: draw, error: e => { log("decoder error " + e.message); needKey = true; setup(cfg); requestKey(); } });
+    dec.configure({ codec: c.codec || "avc1.640028", optimizeForLatency: true, avc: { format: "annexb" } });
+    needKey = true; requestKey();
+  }
+
+  function draw(frame) {
+    const W = cv.width, H = cv.height, r = cfg ? cfg.rot : 0;
+    ctx.save();
+    if (r === 90) { ctx.translate(W, 0); ctx.rotate(Math.PI / 2); }
+    else if (r === 180) { ctx.translate(W, H); ctx.rotate(Math.PI); }
+    else if (r === 270) { ctx.translate(0, H); ctx.rotate(-Math.PI / 2); }
+    ctx.drawImage(frame, 0, 0);
+    ctx.restore();
+    frame.close();
+  }
+
+  function requestKey() {
+    const now = Date.now(); if (now - lastKeyReq < 500) return; lastKeyReq = now;
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ cmd: "keyframe" }));
+  }
+
+  function onFrame(p) {
+    if (!dec || dec.state !== "configured") return;
+    const key = (p[0] & 1) === 1;
+    if (needKey && !key) return;
+    if (dec.decodeQueueSize > 6) { needKey = true; requestKey(); return; }      // الفكّ متأخّر: نقفز لإطار مفتاحيّ بدل تراكم التأخير
+    needKey = false;
+    const dv = new DataView(p.buffer, p.byteOffset, p.byteLength);
+    const ts = Number(dv.getBigUint64(1));
+    try { dec.decode(new EncodedVideoChunk({ type: key ? "key" : "delta", timestamp: ts, data: p.subarray(9) })); }
+    catch (e) { needKey = true; requestKey(); }
+  }
+
+  function connect() {
+    ws = new WebSocket(`ws://${location.host}/pv?role=${role}`);
+    ws.binaryType = "arraybuffer";
+    ws.onmessage = ev => {
+      const u8 = new Uint8Array(ev.data), t = u8[0], p = u8.subarray(1);
+      if (t === 2) { try { setup(JSON.parse(new TextDecoder().decode(p))); } catch (e) { log("bad config"); } }
+      else if (t === 3) onFrame(p);
+      else if (t === 0x10) { try { if (!JSON.parse(new TextDecoder().decode(p)).live) { clear(); needKey = true; } } catch {} }
+    };
+    ws.onclose = () => { setTimeout(connect, 1000); };
+    ws.onerror = () => { try { ws.close(); } catch {} };
+  }
+  if (!("VideoDecoder" in window)) log("WebCodecs غير متاح في هذا المتصفّح");
+  cv.width = 1080; cv.height = 1920; clear();
+  connect();
+</script>
+</body></html>

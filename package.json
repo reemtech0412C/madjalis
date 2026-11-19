@@ -1,0 +1,117 @@
+{
+  "name": "minbar",
+  "productName": "المجالس",
+  "version": "1.1.1",
+  "description": "المجالس — بثّ وتسجيل الدروس والخطب والمحاضرات باحتراف",
+  "main": "main.js",
+  "private": true,
+  "author": {
+    "name": "YamiTech",
+    "email": "yaqobdullah@gmail.com"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.3",
+    "@vladmandic/face-api": "^1.7.15",
+    "pdfjs-dist": "^4.10.38",
+    "qrcode-generator": "^2.0.4",
+    "ws": "^8.23.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "start:noengine": "electron . --no-engine",
+    "dist": "electron-builder --win nsis",
+    "pack": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^45.3.4",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "org.majlis.studio",
+    "productName": "المجالس",
+    "executableName": "Majalis",
+    "copyright": "© 2026 YamiTech. All rights reserved.",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "activate-preload.js",
+      "src/**",
+      "ui/**",
+      "overlays/**",
+      "assets/**",
+      "groq.key",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "assets/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/engine",
+        "to": "engine",
+        "filter": [
+          "**/*",
+          "!obs-studio/config/**",
+          "!obs-studio/logs/**",
+          "!obs-studio/portable_mode.txt"
+        ]
+      },
+      {
+        "from": "resources/bin",
+        "to": "bin"
+      },
+      {
+        "from": "resources/adb",
+        "to": "adb"
+      },
+      {
+        "from": "phone/MajlisCam.apk",
+        "to": "MajlisCam.apk"
+      },
+      {
+        "from": "build/vc_redist.x64.exe",
+        "to": "vc_redist.x64.exe"
+      },
+      {
+        "from": "seed",
+        "to": "seed"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "المجالس",
+      "artifactName": "Majalis-Setup-${version}.exe",
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false,
+      "uninstallDisplayName": "المجالس"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    }
+  }
+}

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>إطار المشهد</title>
+<link rel="stylesheet" href="ov.css"></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script><script src="podkit.js"></script>
+<script>
+  // ?l=card|page|open|sheikh|cam2  &book=x,y,w,h  &cam=x,y,w,h  &page=x,y,w,h  &side=right|left
+  // S.cam = { sheikh, cam2 }: هل الكاميرا ظاهرة؟ لو لا، يترتّب المشهد بدونها (بلا مربّع فاضي)
+  boot(S => {
+    const T = texts(), L = P("l") || "card", b = document.body, shape = S.design.frame || "arch", t = S._t;
+    const cam = S.cam || { sheikh: false, cam2: false };
+    const R = k => (P(k) || "").split(",").map(Number);
+    const showLogos = S.design.sponsors !== false;
+    if (S.mode === "podcast" && (L === "sheikh" || L === "cam2" || L === "cam3")) { PK.solo(S, L === "cam2" ? "guest" : L === "cam3" ? "third" : "host"); return; }       // البودكاست: لوحة المقدّم/الضيف بنمط القالب
+    const role = T["sheikh-title"], name = T.sheikh;
+    const meta = () => [T.programFull, T.scope, T.session].filter(Boolean).map(AR);
+    const gc = S.design.grad === "theme" ? t.deep : "#000000";
+    // التدرّج في زاوية النصّ فقط (أسفل اليمين) — يوضّح الكلام بدون ما يغطّي الصورة
+    const corner = (w = 1300, h = 620, onLeft = false) => el("div", { position: "absolute", [onLeft ? "left" : "right"]: 0, bottom: 0, width: w + "px", height: h + "px", pointerEvents: "none",
+      background: `radial-gradient(ellipse 100% 100% at ${onLeft ? "0%" : "100%"} 100%, ${gc}f0 0%, ${gc}cc 30%, ${gc}80 55%, ${gc}26 80%, ${gc}00 100%)` }, b);
+    const lowerThird = (right, maxW, who = role, nm = name) => {
+      const box = el("div", { right: right + "px", maxWidth: maxW + "px" }, b, "lt cin");
+      const nw = el("div", {}, box);
+      if (who) el("div", {}, nw, "role t").textContent = who;
+      el("div", {}, nw, "name t").textContent = AR(nm);
+      if (nm === name && T["sheikh-post"]) el("div", {}, nw, "role t").textContent = T["sheikh-post"];
+      styleBox(nw, "name");
+      el("div", {}, box, "bar");
+      const m = meta(); if (m.length) { const lw = el("div", {}, box); el("div", {}, lw, "meta t").innerHTML = m.map((x, i) => i === 0 ? `<b>${x}</b>` : x).join("<i>·</i>"); styleBox(lw, "lesson"); }
+      return box;
+    };
+    // بدون كاميرا: بطاقة محراب في الوسط فيها الاسم والدرس (بدل مساحة فاضية)
+    const medal = (who, nm) => {
+      pattern(b, { alpha: .1 });
+      const MW = 760, MH = 700, mx = (W - MW) / 2, my = 150;
+      const m = el("div", { left: mx + "px", top: my + "px", width: MW + "px", height: MH + "px" }, b, "abs rise");
+      m.innerHTML = `<svg width="${MW}" height="${MH}" style="overflow:visible;filter:drop-shadow(0 30px 60px rgba(0,0,0,.35))"><path d="${archPath(MW, MH, MW * .46)}" fill="${t.light ? "rgba(255,255,255,.7)" : t.deep + "d9"}" stroke="var(--accent)" stroke-width="3"/></svg>`;
+      const inn = el("div", { left: mx + "px", top: (my + MW * .33) + "px", width: MW + "px", height: (MH - MW * .33) + "px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }, b, "abs rise");
+      const nw = el("div", { textAlign: "center", margin: "0 auto" }, inn);
+      if (who) el("div", { font: "500 26px var(--fs)", color: "var(--accent-hi)" }, nw, "t").textContent = who;
+      el("div", { font: "700 58px var(--fa)", color: "var(--fg)", marginTop: "4px" }, nw, "t").textContent = AR(nm);
+      if (who && T["sheikh-post"]) el("div", { font: "500 24px var(--fs)", color: "var(--accent-hi)" }, nw, "t").textContent = T["sheikh-post"];
+      styleBox(nw, "name");
+      el("div", { width: "50%", margin: "22px auto" }, inn, "orn").appendChild(document.createElement("i"));
+      const lw = el("div", { textAlign: "center", margin: "0 auto" }, inn);
+      el("div", { font: "700 30px var(--fa)", color: "var(--fg)" }, lw, "t").textContent = AR(T.programFull);
+      el("div", { font: "500 22px var(--fs)", color: "var(--fg2)", marginTop: "8px" }, lw, "t").textContent = AR([T.scope, T.session].filter(Boolean).join(" · "));
+      styleBox(lw, "lesson");
+      if (showLogos) { const lg = el("div", { left: 0, right: 0, bottom: "54px", display: "flex", justifyContent: "center" }, b, "abs rise"); logos(lg, { h: 64, gap: 30 }); }
+    };
+
+    if (L === "card") {
+      // الكتاب + الشيخ. بدون كاميرا: الكتاب في الوسط وحده
+      let bk = R("book"), cm = R("cam");
+      if (!cam.sheikh) bk = [(W - bk[2]) / 2, bk[1], bk[2], bk[3]];
+      const x0 = cam.sheikh ? Math.min(bk[0], cm[0]) : bk[0], x1 = cam.sheikh ? Math.max(bk[0] + bk[2], cm[0] + cm[2]) : bk[0] + bk[2];
+      const head = el("div", { left: x0 + "px", right: (W - x1) + "px", top: "34px" }, b, "abs orn rise");
+      el("i", {}, head);
+      styleBox(el("div", { font: "700 40px var(--fa)", flex: "none", padding: "0 6px" }, head, "t"), "lesson").textContent = AR(T.programFull);
+      el("i", {}, head);
+      el("div", { left: bk[0] + "px", top: bk[1] + "px", width: bk[2] + "px", height: bk[3] + "px" }, b, "hair");
+      if (cam.sheikh) frameSVG(shape, cm);
+      // السطر السفليّ يبدأ من اليمين: الاسم ثمّ الباب والمجلس، والشعارات في الطرف الأيسر
+      const fy = Math.max(bk[1] + bk[3], cam.sheikh && cm.length === 4 ? cm[1] + cm[3] : 0) + 26, fh = H - fy - 30;
+      const foot = el("div", { left: x0 + "px", right: (W - x1) + "px", top: fy + "px", height: fh + "px", display: "flex", alignItems: "center", gap: "26px" }, b, "abs rise");
+      const who = el("div", { textAlign: "right" }, foot);
+      if (role) el("div", { font: "500 18px var(--fs)", color: "var(--accent-hi)" }, who, "t").textContent = role;
+      el("div", { font: "700 38px var(--fa)" }, who, "t").textContent = AR(name);
+      if (T["sheikh-post"]) el("div", { font: "500 17px var(--fs)", color: "var(--accent-hi)" }, who, "t").textContent = T["sheikh-post"];
+      styleBox(who, "name");
+      if (T.scope || T.session) {
+        el("div", { width: "1.5px", height: "54px", background: "var(--line)", flex: "none" }, foot);
+        const sc = el("div", { textAlign: "right" }, foot);
+        if (T.scope) el("div", { font: "700 26px var(--fa)" }, sc, "t").textContent = AR(T.scope);
+        if (T.session) el("div", { font: "500 19px var(--fs)", color: "var(--accent-hi)", marginTop: "2px" }, sc, "t").textContent = AR(T.session);
+        styleBox(sc, "lesson");
+      }
+      el("div", { flex: "1" }, foot);
+      if (showLogos) logos(foot, { h: 60, gap: 22 });
+    } else if (L === "open") {
+      // الكتاب مفتوح كبير — العنوان يمين، والشيخ في إطار صغير (لو فيه كاميرا)
+      const cm = R("cam"), camLeft = cm[0] < W / 2;
+      const tag = el("div", { right: "64px", top: "40px", textAlign: "right" }, b, "abs rise");
+      const tg = el("div", {}, tag);
+      el("div", { font: "700 34px var(--fa)" }, tg, "t").textContent = AR(T.programFull);
+      el("div", { font: "500 20px var(--fs)", color: "var(--accent-hi)", marginTop: "4px" }, tg, "t").textContent = AR([T.scope, T.session].filter(Boolean).join(" · "));
+      styleBox(tg, "lesson");
+      // الشعارات تُحمَّل بعد الرسم فلا يُعرف عرضها فوراً: نبعد العنوان عنها (في أيّ زاوية وبأيّ حجم) لمّا تكتمل
+      let logoBox = null, nameBox = null;
+      const placeTag = () => {
+        let tagRight = 64, leftReserve = 40;
+        if (logoBox && logoBox.v === "top") { const used = logoBox.off + logoBox.w + 40; if (logoBox.hz === "right") tagRight = used; else leftReserve = used; }
+        if (nameBox && logoBox && logoBox.v === "bottom" && logoBox.hz === "right") nameBox.style.right = (logoBox.off + logoBox.w + 40) + "px";      // اسم الشيخ (بلا كاميرا) يبتعد عن شعارات أسفل اليمين
+        tag.style.right = tagRight + "px"; tag.style.maxWidth = Math.max(360, W - tagRight - leftReserve) + "px"; tag.style.whiteSpace = "normal"; tag.style.lineHeight = "1.3";
+      };
+      placeTag();
+      if (showLogos) {
+        const lg = el("div", { left: "64px", top: "40px" }, b, "abs rise"); logos(lg, { h: 56, gap: 18 });
+        const corner = document.getElementById("mb-logo-corner"), host = corner || lg, imgs = [...host.querySelectorAll("img")];
+        const measure = () => {
+          if (!host.offsetWidth) return;
+          const [v, hz] = corner ? S.design.logoPos.split("-") : ["top", "left"];
+          logoBox = { v, hz, w: host.offsetWidth, h: host.offsetHeight, off: corner ? 48 : 64 }; placeTag();
+        };
+        Promise.all(imgs.map(i => i.complete ? 0 : new Promise(r => { i.addEventListener("load", r); i.addEventListener("error", r); }))).then(measure);
+      }
+      if (cam.sheikh && cm.length === 4 && cm[2]) {
+        frameSVG(shape, cm, { sw: 2, inner: 8 });
+        const nm = el("div", { [camLeft ? "left" : "right"]: (camLeft ? cm[0] : W - cm[0] - cm[2]) + "px", bottom: (H - cm[1] + 22) + "px", textAlign: camLeft ? "left" : "right" }, b, "abs rise");
+        if (role) el("div", { font: "500 15px var(--fs)", color: "var(--accent-hi)" }, nm, "t").textContent = role;
+        el("div", { font: "700 28px var(--fa)" }, nm, "t").textContent = AR(name);
+        if (T["sheikh-post"]) el("div", { font: "500 15px var(--fs)", color: "var(--accent-hi)" }, nm, "t").textContent = T["sheikh-post"];
+        styleBox(nm, "name");
+      } else {
+        const nm = el("div", { right: "64px", bottom: "36px", textAlign: "right" }, b, "abs rise"); nameBox = nm;
+        el("div", { font: "700 26px var(--fa)" }, nm, "t").textContent = [role, AR(name)].filter(Boolean).join(" ");
+        styleBox(nm, "name");
+      }
+    } else if (L === "page") {
+      // صفحة + الشيخ: الصفحة يسار والشيخ يمين، والاسم من اليمين فوق تدرّج الزاوية.  بدون كاميرا: الصفحة في الوسط
+      let pg = R("page");
+      if (!cam.sheikh) {
+        pg = [(W - pg[2]) / 2, pg[1], pg[2], pg[3]];
+        const tag = el("div", { right: "64px", top: "44px", textAlign: "right", maxWidth: (W - pg[0] - pg[2] - 110) + "px" }, b, "abs rise");
+        const nw = el("div", {}, tag);
+        if (role) el("div", { font: "500 22px var(--fs)", color: "var(--accent-hi)" }, nw, "t").textContent = role;
+        el("div", { font: "700 40px var(--fa)", whiteSpace: "normal", lineHeight: 1.3 }, nw).textContent = AR(name);
+        if (T["sheikh-post"]) el("div", { font: "500 22px var(--fs)", color: "var(--accent-hi)" }, nw, "t").textContent = T["sheikh-post"];
+        styleBox(nw, "name");
+        el("div", { height: "3px", width: "90px", background: "var(--accent)", margin: "16px 0 16px auto", borderRadius: "3px" }, tag);
+        const lw = el("div", {}, tag);
+        el("div", { font: "700 24px var(--fa)", whiteSpace: "normal", lineHeight: 1.5 }, lw).textContent = AR(T.programFull);
+        el("div", { font: "500 20px var(--fs)", color: "var(--fg2)", marginTop: "6px", whiteSpace: "normal" }, lw).textContent = AR([T.scope, T.session].filter(Boolean).join(" · "));
+        styleBox(lw, "lesson");
+        if (showLogos) { const lg = el("div", { left: "60px", bottom: "56px", display: "flex", flexDirection: "column", gap: "26px" }, b, "abs rise"); logos(lg, { h: 60, gap: 26 }); lg.firstChild && (lg.firstChild.style.flexDirection = "column"); }
+      } else if (pg[0] < W / 2) {
+        // الصفحة يسار والشيخ يمين
+        corner(W - pg[0] - pg[2] + 60, 620);
+        lowerThird(72, W - (pg[0] + pg[2]) - 140);
+        if (showLogos) { const lg = el("div", { right: "72px", top: "56px" }, b, "abs cin"); logos(lg, { h: 56, gap: 22 }); }
+      } else {
+        // الصفحة يمين والشيخ يسار: النصّ يبدأ من يمين مساحة الشيخ (بجانب الصفحة)
+        corner(pg[0] + 60, 620, true);
+        lowerThird(W - pg[0] + 60, pg[0] - 130);
+        if (showLogos) { const lg = el("div", { left: "72px", top: "56px" }, b, "abs cin"); logos(lg, { h: 56, gap: 22 }); }
+      }
+    } else {
+      // الشيخ / كاميرا الحضور بالكاميرا الكاملة: تدرّج الزاوية + الاسم من اليمين + الشعارات يسار
+      // كاميرا الحضور: العنوان = وجهتها (الطلبة / باحة المسجد / نصّ حرّ) بدل اسم الشيخ
+      const isCam2 = L === "cam2", on = isCam2 ? cam.cam2 : cam.sheikh;
+      const who = isCam2 ? "" : role, nm = isCam2 ? ((S.cam2 && S.cam2.label) || "كاميرا الحضور") : name;
+      if (!on) { medal(who, nm); return; }
+      // lift = ارتفاع شريط «سطور الكتاب»: لقب الشيخ واسمه فوق الشريط (الذي يغطّي أسفل الصورة) لا تحته
+      if (P("lift")) {
+        const Ly = +P("lift") || 440;
+        el("div", { right: 0, bottom: Ly + "px", width: "1150px", height: "300px", pointerEvents: "none",
+          background: `radial-gradient(ellipse 100% 100% at 100% 100%, ${gc}e6 0%, ${gc}b3 35%, ${gc}59 65%, ${gc}00 100%)` }, b);
+        const lt = el("div", { right: "84px", bottom: (Ly + 26) + "px", maxWidth: "1100px" }, b, "lt cin");
+        const nw = el("div", {}, lt);
+        if (who) el("div", { font: "500 24px var(--fs)" }, nw, "role t").textContent = who;
+        el("div", { font: "700 50px var(--fa)" }, nw, "name t").textContent = AR(nm);
+        if (T["sheikh-post"]) el("div", { font: "500 22px var(--fs)", color: "var(--accent-hi)" }, nw, "t").textContent = T["sheikh-post"];
+        styleBox(nw, "name");
+        return;
+      }
+      corner();
+      lowerThird(84, 1180, who, nm);
+      // حتى 3 شعارات أسفل اليسار؛ أكثر من كذا فوق اليسار حتى ما تزاحم الاسم
+      if (showLogos) { const many = (S.logos || []).filter(l => l && l.on !== false).length > 3;
+        const lg = el("div", { left: "84px", [many ? "top" : "bottom"]: many ? "56px" : "70px" }, b, "abs cin"); logos(lg, { h: 64, gap: 26 }); }
+    }
+  });
+</script>
+</body></html>

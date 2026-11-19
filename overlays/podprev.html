@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>معاينة قالب</title>
+<link rel="stylesheet" href="ov.css"></head>
+<body>
+<script src="themes.js"></script>
+<script>
+  // معاينة مصغّرة لقالب بودكاست داخل الواجهة: ?tpl=studio [&bg=waves&font=cairo&shape=round&plate=pill&bgImg=file]
+  // تعرض خلفيّة القالب وشارته وإطارين بلوحتي اسم بخطّه الحقيقيّ، فيرى المستخدم الشكل قبل اختياره.
+  (() => { const q = new URLSearchParams(location.search), o = {}; for (const [k, v] of q) if (v) o[k === "tpl" ? "id" : k] = v; window.__PODOVR = o; })();
+</script>
+<script src="ov.js"></script><script src="podkit.js"></script>
+<script>
+  boot(S => {
+    const b = document.body, t = S._t, c = PK.cfg(S);
+    S.texts = Object.assign({}, S.texts, { program: "بودكاست أثير", tagline: "حوارات تُلهم", episode: "12", topic: "كيف نصنع عادات تدوم؟", sheikh: "أحمد الراشد", "sheikh-title": "المقدّم", guest: "د. سارة المنصور", "guest-title": "الضيف", guestRole: "" });
+    S.logos = []; S.imgs = {};
+    PK.bg(b, S);
+    const boxes = [[990, 190, 800, 640], [130, 190, 800, 640]];
+    boxes.forEach((bx, i) => {
+      el("div", { left: bx[0] + "px", top: bx[1] + "px", width: bx[2] + "px", height: bx[3] + "px", background: "linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.07))", clipPath: "inset(0 round 36px)" }, b, "abs");
+      PK.duoFrame(S, i ? "sheikh" : "cam2", bx, false);
+    });
+    PK.badge(b, S, { position: "absolute", left: "50%", top: "40px", transform: "translateX(-50%) scale(1.25)", transformOrigin: "top center" });
+  });
+</script>
+</body></html>

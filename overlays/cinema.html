@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سينما</title>
+<link rel="stylesheet" href="ov.css">
+<style>
+  .fill{position:absolute;inset:0;pointer-events:none}
+  .bar{position:absolute;left:0;right:0;background:#000;transition:height .9s cubic-bezier(.16,1,.3,1)}
+  canvas{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
+</style></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script>
+<script>
+  // ?bars=1|0 — طبقة الوضع السينمائيّ: تعتيم الأطراف + وهج + حبيبات فيلم + شريطان أسودان. التصحيح اللونيّ على الكاميرا نفسها (main.js).
+  boot(S => {
+    clearInterval(window.__g);
+    const d = S.design, m = MINBAR_THEMES.CINEMA[d.cinema] || MINBAR_THEMES.CINEMA.off, b = document.body;
+    if (!m.grade) return;                                                   // «بلا وضع»
+    const K = Math.max(0, Math.min(100, Number(d.cinemaK ?? 100))) / 100, t = S._t;
+    // تعتيم الأطراف
+    const vig = Math.min(.88, (m.vig || 0) * K * 1.35);
+    if (vig > 0) el("div", { background: "radial-gradient(ellipse 78% 72% at 50% 50%, transparent 42%, rgba(0,0,0," + (vig * .55).toFixed(3) + ") 72%, rgba(0,0,0," + vig.toFixed(3) + ") 100%)" }, b, "fill");
+    // وهج لونيّ من الزاوية العليا (ساعة ذهبيّة)
+    const glow = (m.glow || 0) * K;
+    if (glow > 0) el("div", { background: "radial-gradient(60% 55% at 88% 6%, " + MINBAR_THEMES.rgba(t.accentHi, glow) + ", transparent 70%), radial-gradient(70% 40% at 10% 100%, " + MINBAR_THEMES.rgba(t.accent, glow * .6) + ", transparent 70%)" }, b, "fill");
+    // حبيبات الفيلم: ضجيج متحرّك بدقّة منخفضة يُكبَّر
+    const gr = (m.grain || 0) * K;
+    if (gr > 0) {
+      const c = document.createElement("canvas"); c.width = 480; c.height = 270; b.appendChild(c);
+      const g = c.getContext("2d"), im = g.createImageData(480, 270), px = im.data, a = Math.round(255 * Math.min(.32, gr * .95));
+      const frame = () => { for (let i = 0; i < px.length; i += 4) { const v = Math.random() < .5 ? 0 : 255; px[i] = px[i + 1] = px[i + 2] = v; px[i + 3] = Math.random() < .5 ? a : 0; } g.putImageData(im, 0, 0); };
+      frame(); window.__g = setInterval(frame, 90);
+    }
+    // الشريطان الأسودان (نسبة العرض إلى الارتفاع)
+    if (P("bars") === "1" && d.cinemaBars !== false && m.bars) {
+      const h = Math.max(0, (H - W / m.bars) / 2);
+      for (const side of ["top", "bottom"]) { const e = el("div", { [side]: 0, height: "0px" }, b, "bar"); requestAnimationFrame(() => requestAnimationFrame(() => { e.style.height = h + "px"; })); }
+    }
+  });
+</script>
+</body></html>

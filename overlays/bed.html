@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>موسيقى الخلفيّة</title></head>
+<body style="margin:0;background:transparent">
+<script src="themes.js"></script><script src="ov.js"></script>
+<script>
+  // موسيقى الخلفيّة الهادئة للبودكاست: مقطع يتكرّر طالما مفعَّلة. المصدر يبقى حيّاً بين المشاهد (لا يُعاد تحميله) فتستمرّ بلا انقطاع.
+  // «التفاعل»: يخفضها المحرّك تلقائيّاً عند كلام المتحدّث (فلتر ضاغط بسلسلة جانبيّة من المايك) ويرفعها عند الصمت.
+  let au = null, cur = "";
+  boot(S => {
+    const b = S.bed || {};
+    if (!au) { au = new Audio(); au.loop = true; }
+    if (!S.bed || !b.on || !b.file) { au.pause(); cur = ""; return; }
+    if (cur !== b.file) { cur = b.file; au.src = "/media/" + encodeURIComponent(b.file); }
+    au.volume = Math.max(0, Math.min(1, (b.vol ?? 22) / 100));
+    au.play().catch(() => {});
+  });
+</script>
+</body></html>

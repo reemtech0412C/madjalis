@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>معرض الصور</title>
+<link rel="stylesheet" href="ov.css"></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script><script src="podkit.js"></script>
+<script>
+  // معرض الصور (البودكاست): صورة واحدة تتقدّم كل N ثانية (حركة كاميرا بطيئة / تلاشٍ / انزلاق) داخل إطار بشكل القالب، مع تعليق وخطوط تقدّم وموسيقى هادئة.
+  // ?mode=full (كامل الشاشة بخلفيّة القالب) | panel&box=x,y,w,h (لوحة بجانب الضيف؛ الخلفيّة من المشهد)
+  const MODE = P("mode") || "full", PBOX = (P("box") || "").split(",").map(Number);
+  let stage = null, sig = "", idx = 0, timer = 0, au = null, curSrc = "";
+  boot(S => {
+    if (!window.__galL) { window.__galL = 1; listen((k, d) => { if (k === "gal" && d && window.__galGo) window.__galGo(d.cmd); }); }
+    const t = S._t, PH = S.photos || {}, c = PK.cfg(S);
+    if (MODE === "full") { PK.bg(document.body, S); PK.logoLayer(document.body, S, "live"); const bd = PK.badge && c.show.badge ? el("div", { left: 0, right: 0, top: "16px", display: "flex", justifyContent: "center", transform: "scale(.82)", transformOrigin: "top center" }, document.body, "abs") : null; if (bd) PK.badge(bd, S, {}); }
+    const items = (PH.items || []).filter(i => i.file && i.inGal !== false);
+    const box = MODE === "full" ? [200, 130, 1520, 760] : (PBOX.length === 4 && PBOX[2] ? PBOX : [700, 120, 1160, 780]);
+    const nsig = JSON.stringify([items, PH.secs, PH.fx, PH.caps, PH.frame, c.pframe, box, S.podcast]);
+    // الموسيقى: تتكرّر طالما المعرض على الهواء؛ يُعاد تحميل المصدر عند كل ظهور (restart_when_active) فتبدأ من أوّلها
+    const mu = PH.music || {};
+    if (mu.file) { if (!au) { au = new Audio(); au.loop = true; } if (curSrc !== mu.file) { curSrc = mu.file; au.src = "/media/" + encodeURIComponent(mu.file); } au.volume = Math.max(0, Math.min(1, (mu.vol ?? 25) / 100)); au.play().catch(() => {}); } else if (au) { au.pause(); curSrc = ""; }
+    if (stage && stage.isConnected && nsig === sig) return;
+    sig = nsig; clearTimeout(timer); if (stage) stage.remove();
+    stage = el("div", { inset: 0, zIndex: 5 }, document.body, "abs"); stage.dataset.keep = 1;
+    const [x, y, w, h] = box, shape = c.shape, secs = Math.max(2, Math.min(30, PH.secs || 6)), fx = PH.fx || "kenburns";
+    if (!items.length) {
+      const m = el("div", { left: x + "px", top: y + "px", width: w + "px", height: h + "px", display: "flex", alignItems: "center", justifyContent: "center", font: "600 34px var(--fa)", color: "var(--fg)", opacity: .8, textAlign: "center" }, stage, "abs");
+      m.textContent = AR("أضف صوراً من تبويب «البودكاست» ← معرض الصور"); return;
+    }
+    if ((PH.frame || c.pframe) === "paper") {
+      // ورقة مسطّرة ممزّقة + بطاقة صورة ممزّقة تتبدّل بحركة خفيفة
+      const sheet = MODE === "full" ? [110, 125, 1700, 790] : [x - 24, y - 24, w + 48, h + 48];
+      PK.paperSheet(stage, sheet, 4);
+      const area = el("div", { left: sheet[0] + "px", top: sheet[1] + "px", width: sheet[2] + "px", height: sheet[3] + "px" }, stage, "abs");
+      const dots2 = items.length > 1 ? el("div", { left: sheet[0] + "px", top: (sheet[1] + sheet[3] - 34) + "px", width: sheet[2] + "px", display: "flex", justifyContent: "center", gap: "10px" }, stage, "abs") : null;
+      const dd2 = dots2 ? items.map(() => el("i", { display: "block", height: "8px", width: "8px", borderRadius: "9px", background: t.accent, opacity: .35, transition: "all .5s" }, dots2)) : [];
+      let prevC = null, k2 = 0;
+      const showP = i => {
+        const it = items[i % items.length], im = new Image(); im.src = "/media/" + encodeURIComponent(it.file);
+        im.onload = () => {
+          const ar = im.naturalHeight / im.naturalWidth, mw = sheet[2] * (MODE === "full" ? .5 : .78), mh = sheet[3] * .86, capT = PH.caps !== false ? it.cap : "";
+          let cw = mw; const probe = PK.paperCard({ w: cw, ar, src: im.src, cap: capT }); if (probe.h > mh) cw = cw * mh / probe.h; probe.el.remove();
+          const c = PK.paperCard({ w: Math.round(cw), ar, src: im.src, cap: capT, rot: (k2 % 2 ? 2.4 : -2.4), seed: 11 + k2 * 5 });
+          const box2 = el("div", { left: Math.round((sheet[2] - cw) / 2) + "px", top: Math.round((sheet[3] - c.h) / 2) + "px", width: Math.round(cw) + "px", height: c.h + "px", opacity: 0 }, area, "abs"); box2.appendChild(c.el);
+          const dir = k2++ % 2 ? -1 : 1;
+          box2.animate([{ opacity: 0, transform: `translateY(34px) rotate(${6 * dir}deg) scale(.94)` }, { opacity: 1, transform: "none" }], { duration: 900, fill: "forwards", easing: "cubic-bezier(.2,.8,.2,1)" });
+          if (prevC) { const p0 = prevC; p0.animate([{ opacity: 1 }, { opacity: 0, transform: `translateY(-24px) rotate(${-4 * dir}deg)` }], { duration: 700, fill: "forwards" }).onfinish = () => p0.remove(); }
+          prevC = box2;
+        };
+        dd2.forEach((d, j) => { const on = j === i % items.length; d.style.width = on ? "34px" : "8px"; d.style.opacity = on ? 1 : .35; });
+      };
+      const nextP = () => { showP(idx); idx = (idx + 1) % items.length; if (items.length > 1) timer = setTimeout(nextP, secs * 1000); };
+      window.__galGo = c => { clearTimeout(timer); if (c === "prev") idx = ((idx - 2) % items.length + items.length) % items.length; nextP(); };
+      idx = 0; nextP(); return;
+    }
+    // الإطار: المحتوى مقصوص بشكل القالب + حدّ زخرفيّ فوقه
+    const clip = el("div", { left: x + "px", top: y + "px", width: w + "px", height: h + "px", overflow: "hidden", clipPath: `path('${shapePath(shape, w, h)}')`, background: t.deep }, stage, "abs");
+    const fr = frameSVG(shape, box, { sw: 3, inner: 12, parent: stage }); fr.style.filter = `drop-shadow(0 0 24px ${PK.rgba(t.accent, .45)})`;
+    const capBar = PH.caps !== false ? el("div", { left: 0, top: (h - 120) + "px", width: w + "px", height: "120px", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: "26px", boxSizing: "border-box", background: `linear-gradient(to top, ${PK.rgba(t.deep, .88)}, transparent)`, pointerEvents: "none", zIndex: 3, transition: "opacity .6s" }, clip, "abs") : null;
+    const cap = capBar ? el("div", { font: "700 38px var(--fa)", color: "#fff", textShadow: "0 2px 10px rgba(0,0,0,.6)", maxWidth: (w - 80) + "px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", transition: "opacity .6s" }, capBar) : null;
+    const dots = items.length > 1 ? el("div", { left: x + "px", top: (y + h + 26) + "px", width: w + "px", display: "flex", justifyContent: "center", gap: "10px" }, stage, "abs") : null;
+    const dd = dots ? items.map(() => el("i", { display: "block", height: "8px", width: "8px", borderRadius: "9px", background: t.accent, opacity: .35, transition: "all .5s" }, dots)) : [];
+    let prev = null, n = 0;
+    const show = i => {
+      const it = items[i % items.length], L = el("div", { inset: 0, opacity: 0 }, clip, "abs"), im = new Image();
+      im.src = "/media/" + encodeURIComponent(it.file);
+      Object.assign(im.style, { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }); L.appendChild(im);
+      const dir = n++ % 2 ? -1 : 1, dur = (secs + 1.6) * 1000;
+      if (fx === "kenburns") im.animate([{ transform: `scale(1.02) translate(${-1.5 * dir}%, ${-1 * dir}%)` }, { transform: `scale(1.14) translate(${1.5 * dir}%, ${1 * dir}%)` }], { duration: dur, fill: "forwards", easing: "ease-in-out" });
+      const inA = fx === "slide" ? [{ opacity: 0, transform: "translateX(" + 9 * dir + "%)" }, { opacity: 1, transform: "none" }] : [{ opacity: 0 }, { opacity: 1 }];
+      L.animate(inA, { duration: fx === "slide" ? 900 : 1300, fill: "forwards", easing: "cubic-bezier(.2,.7,.2,1)" });
+      if (prev) { const p0 = prev; p0.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1300, fill: "forwards" }).onfinish = () => p0.remove(); }
+      prev = L;
+      if (cap) { cap.style.opacity = 0; setTimeout(() => { cap.textContent = it.cap ? AR(it.cap) : ""; cap.style.opacity = 1; }, 380); if (capBar) capBar.style.opacity = it.cap ? 1 : 0; }
+      dd.forEach((d, j) => { const on = j === i % items.length; d.style.width = on ? "34px" : "8px"; d.style.opacity = on ? 1 : .35; });
+    };
+    const next = () => { show(idx); idx = (idx + 1) % items.length; if (items.length > 1) timer = setTimeout(next, secs * 1000); };
+    window.__galGo = c => { clearTimeout(timer); if (c === "prev") idx = ((idx - 2) % items.length + items.length) % items.length; next(); };
+    idx = 0; next();
+  });
+</script>
+</body></html>

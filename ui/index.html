@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>المجالس</title>
+<link rel="stylesheet" href="/assets/fonts/fonts.css?v=3">
+<link rel="stylesheet" href="app.css">
+<script src="icons.js"></script>
+</head>
+<body>
+<header id="top">
+  <div class="brand"><img src="logo.png" alt="المجالس" class="logo"></div>
+  <button id="crumb" class="crumb" title="الحلقات والكتب والمجالس"><span class="ic" data-i="library"></span><span class="tx">اختر الحلقة</span></button>
+  <div id="eng" class="pill">يشتغل…</div>
+  <button id="btnBig" class="hbtn" title="عرض كبير (V) — الأدوات شبه شفّافة فوق الشاشة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <div class="grow"></div>
+  <div id="qBadge" class="pill q">Full HD</div>
+  <button id="btnRec" class="out rec" title="تسجيل"><span class="ic" data-i="rec"></span><span class="lb"></span></button>
+  <button id="btnLive" class="out live" title="بثّ مباشر"><span class="ic" data-i="live"></span><span class="lb"></span></button>
+</header>
+
+<main>
+  <button id="btnSide" title="طيّ / فتح الإطار الجانبي"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.75" y="3.75" width="14.5" height="12.5" rx="3"/><path d="M12.25 3.75v12.5"/></svg></button>
+  <aside id="side">
+    <nav id="tabs">
+      <button data-t="halaqa" class="on"><span class="ic" data-i="tab_halaqa"></span><span class="tl">ضبط الحلقة</span></button>
+      <button data-t="lib"><span class="ic" data-i="tab_book"></span><span class="tl">ضبط الكتاب</span></button>
+      <button data-t="lesson"><span class="ic" data-i="tab_lesson"></span><span class="tl">ضبط الدرس</span></button>
+      <button data-t="quran" style="display:none"><span class="ic" data-i="tab_book"></span><span class="tl">المصحف</span></button>
+      <button data-t="podcast" style="display:none"><span class="ic" data-i="tab_look"></span><span class="tl">القالب</span></button>
+      <button data-t="design"><span class="ic" data-i="tab_look"></span><span class="tl">الشكل</span></button>
+      <button data-t="dev"><span class="ic" data-i="tab_cam"></span><span class="tl">الأجهزة</span></button>
+      <button data-t="live"><span class="ic" data-i="tab_live"></span><span class="tl">البثّ</span></button>
+    </nav>
+
+    <div class="tab on" id="t-halaqa">
+      <h2 class="tsec">بيانات الحلقة <small id="scrHalaqa"></small></h2>
+      <div id="hForm"></div>
+      <h2 class="tsec">الشعار وموضعه</h2>
+      <p class="hint">الشعار والرعاة وإعداداتهم يُحفظون للحلقة كلّها.</p>
+      <h3>شعار الحلقة <small>أين يظهر</small></h3>
+      <div id="scrRows"></div>
+      <div id="imgLogo" class="imged"></div>
+      <h3>شعارات الجهة والرعاة</h3>
+      <label class="switch"><input type="checkbox" id="sponsorsOn"><i></i><span>إظهار الشعارات في البثّ</span></label>
+      <h3>موضع الشعارات على الشاشة</h3>
+      <div class="cards4 cards-pos" id="logoPosSeg"></div>
+      <h3>حجم الشعارات <small id="logoScaleV"></small></h3>
+      <input type="range" id="logoScale" min="0.5" max="5" step="0.1" class="ltr">
+      <div id="logoSlots" class="slots"></div>
+      <p class="hint">اضغط على خانة فاضية وارفع الشعار — حتى 6 شعارات. الأفضل صورة PNG بخلفيّة شفّافة.<br>
+      الشعار يظهر <b>بألوانه الأصليّة</b>. زرّ «ألوانه / أبيض» يحوّله للأبيض فقط لو كانت ألوانه غامقة ما تبين على الخلفيّة.<br>زرّ «بخلفيّته / بلا خلفيّة» يزيل الخلفيّة المصمتة (بيضاء أو ملوّنة) من الشعار تلقائيّاً؛ إن بقي أثر فجرّب صورة أوضح.</p>
+      <h2 class="tsec">شاشات قبل البثّ والاستراحة والختام</h2>
+      <p class="hint">يظهر شعار الحلقة بجانب بطاقة المجلس وبحجمها. يُحفظ الشعار وإعداداته للحلقة، فلا تُعاد في كل تسجيل.</p>
+      <h3>تخصيص الشاشة <small>بطاقة الكتاب والخلفيّة والصوت — لكل شاشة ولكل حلقة</small></h3>
+      <div class="cards3" id="scrFxKind"></div>
+      <div id="scrFx" class="capbox tsctl"></div>
+    </div>
+
+    <div class="tab" id="t-lib">
+      <h2 class="tsec">الكتاب المعروض</h2>
+      <div id="curBook"></div>
+      <button id="openLib" class="big pri"><span class="ic" data-i="library"></span>تصفّح المكتبة الشاملة</button>
+      <div class="two">
+      <button id="pdfPick" class="mid"><span class="ic" data-i="file"></span>كتاب من جهازي</button>
+      <button id="openArchive" class="mid"><span class="ic" data-i="globe"></span>أرشيف الإنترنت</button>
+      </div>
+      <h3>كتبي</h3>
+      <div id="myBooks" class="shelf"></div>
+      <div id="job" hidden><div class="jt"></div><div class="bar"><i></i></div></div>
+      <h2 class="tsec">الشيخ والدورة والكتاب</h2>
+      <div id="bForm"></div>
+      <h2 class="tsec">عرض الكتاب في البثّ</h2>
+      <h3>تقليب الكتاب</h3>
+      <div class="cards2" id="flipSeg"></div>
+      <h3>مكان الشيخ <small>في «الكتاب + الشيخ» و«صفحة + الشيخ»</small></h3>
+      <div class="cards2" id="sideSeg"></div>
+      <div id="readingCfg"></div>
+    </div>
+
+    <div class="tab" id="t-lesson">
+      <h3>بيانات الدرس <small>تظهر في البثّ فوراً</small></h3>
+      <div id="textForm"></div>
+    </div>
+
+    <div class="tab" id="t-podcast"></div>
+    <div class="tab" id="t-quran"></div>
+
+    <div class="tab" id="t-design">
+      <h3>خطّ البثّ <small>للأسماء والعناوين في كل الشاشات</small></h3>
+      <div class="cards2" id="fontSeg"></div>
+      <h3>الألوان</h3>
+      <div id="themes" class="swatches"></div>
+      <div id="customColors" class="two" hidden>
+      <label class="fld">لون الخلفيّة <input type="color" id="cBg"></label>
+      <label class="fld">اللون البارز <input type="color" id="cAc"></label>
+      </div>
+      <h3>النقش</h3>
+      <div id="patterns" class="tiles"></div>
+      <h3>تحت اسم الشيخ</h3>
+      <div class="cards2" id="gradSeg"></div>
+      <h3>الانتقال بين المشاهد <small>بين مشهد وآخر أثناء البثّ</small></h3>
+      <div class="cards3" id="transSeg"></div>
+      <div class="speed"><div class="spl"><span>أبطأ</span><b id="trLbl"></b><span>أسرع</span></div>
+      <input type="range" id="trSpeed" class="ltr" min="0" max="100" step="1"><button id="trReset" class="mid">المدّة الافتراضيّة للانتقال</button></div>
+      <h3>الوضع السينمائيّ <small>تصحيح لونيّ + شريطان + تعتيم أطراف + حبيبات فيلم</small></h3>
+      <div class="cards3" id="cinemaSeg"></div>
+      <label class="fld">شدّة الوضع <input type="range" id="cinemaK" min="0" max="100" step="5"></label>
+      <label class="switch"><input type="checkbox" id="cinemaBars"><i></i><span>الشريطان الأسودان <small>في مشهدَي «الشيخ» و«كاميرا الحضور» فقط</small></span></label>
+      <p class="hint">التصحيح اللونيّ يُطبَّق على الكاميرتين مباشرةً، والتعتيم والحبيبات تظهر فوق مشاهد الكاميرا الكاملة ومشهد «الشيخ + الحضور». مشاهد الكتاب لا تتأثّر حتى تبقى الصفحات واضحة.</p>
+      <h3>شكل إطار الشيخ</h3>
+      <div class="cards4" id="frameSeg"></div>
+      <h3>مشهد «الشيخ + الحضور» <small>إطاران يعرضان الكاميرتين — يظهر المشهد عند تفعيل كاميرا الحضور</small></h3>
+      <div class="cards3" id="duoMode"></div>
+      <div class="two"><div><div class="hint">الإطار الكبير</div><div class="cards2" id="duoBig"></div></div><div><div class="hint">جهته</div><div class="cards2" id="duoSide"></div></div></div>
+      <label class="fld">حجم الإطار الصغير <input type="range" id="duoSmall" min="0.5" max="1.3" step="0.05"></label>
+      <h3>نمط النصوص <small>الاسم والدرس: خلفيّة وإطار وظلّ وألوان — لكل منهما نمطه</small></h3>
+      <div class="cards2" id="tsGroup"></div>
+      <div id="tsPrev" class="tsprev"></div>
+      <div id="tsCtl" class="capbox"></div>
+      <div class="two"><button id="tsCopy" class="mid">نسخ النمط للمجموعة الأخرى</button><button id="tsReset" class="mid danger">إعادة الضبط</button></div>
+    </div>
+
+    <div class="tab" id="t-dev">
+      <h3><span class="ic" data-i="camera"></span>هاتف المجالس <small>حوّل هاتفك إلى كاميرا بتطبيق «كاميرا المجالس»</small></h3>
+      <p class="hint" id="phHost"></p>
+      <div id="phoneBox"></div>
+      <div class="two"><button id="phUsb" class="mid">تهيئة USB</button><button id="phInstall" class="mid">تثبيت التطبيق على الهاتف</button></div>
+      <label class="switch"><input type="checkbox" id="phUsbAuto"><i></i><span>تهيئة USB تلقائيّة <small>كلما وُصل هاتف بالكابل</small></span></label>
+      <button id="phRegen" class="mid">رمز اقتران جديد</button>
+      <p class="hint">الكابل أثبت وأسرع من Wi‑Fi: وصّل الهاتف، فعّل «تصحيح USB» في خيارات المطوّر، ثمّ اضغط «تهيئة USB». لا حاجة لـ DroidCam.</p>
+      <h3><span class="ic" data-i="camera"></span><span data-pod="كاميرا المقدّم">كاميرا الشيخ</span> <small>الكاميرا 1 — الأساسيّة</small></h3>
+      <label class="fld"><span data-pod="جهاز كاميرا المقدّم">جهاز كاميرا الشيخ</span> <select id="camSheikh"></select></label>
+      <div class="capbox tsctl" id="camQ">
+      <b>جودة الكاميرا <small>للكاميرات الرقميّة (Canon / Sony…) وبطاقات الالتقاط HDMI</small></b>
+      <label class="fld">الدقّة <select id="cqRes"></select></label>
+      <div class="two"><label class="fld">الإطارات في الثانية <select id="cqFps"><option value="0">تلقائي</option><option value="24">24</option><option value="25">25</option><option value="30">30</option><option value="50">50</option><option value="60">60</option></select></label>
+      <label class="fld">الصيغة <select id="cqFmt"><option value="auto">تلقائي</option><option value="mjpeg">MJPEG (يوفّر النطاق)</option><option value="nv12">NV12</option><option value="yuy2">YUY2 (بلا ضغط)</option></select></label></div>
+      <div id="cqInfo" class="hint"></div>
+      <p class="hint">كاميرات Canon وSony لا تظهر كأيّ كاميرا ويب إلا بإحدى طريقتين: برنامج وسيط من الشركة (Canon: EOS Webcam Utility، Sony: Imaging Edge Webcam) أو بطاقة التقاط HDMI (مثل Elgato Cam Link). وبعد التوصيل تظهر في قائمة الأجهزة أعلاه فاختر دقّتها هنا.</p>
+      </div>
+      <h3><span class="ic" data-i="camera"></span><span data-pod="كاميرا الضيف">كاميرا الحضور</span> <small>الكاميرا 2 — ثانويّة، للحضور أو الطلبة أو باحة المسجد</small></h3>
+      <label class="switch"><input type="checkbox" id="cam2On"><i></i><span data-pod="تفعيل كاميرا الضيف">تفعيل كاميرا الحضور</span></label>
+      <label class="fld"><span data-pod="جهاز كاميرا الضيف">جهاز كاميرا الحضور</span> <select id="cam2"></select></label>
+      <div class="cards4" id="cam2Target"></div>
+      <label class="fld" id="cam2LabelBox" hidden>اسم الوجهة (يظهر على الشاشة) <input id="cam2Label" placeholder="مثال: قاعة النساء"></label>
+      <div id="cam2State" class="hint"></div>
+      <div id="cam3Box" hidden>
+        <h3><span class="ic" data-i="camera"></span>الكاميرا الثالثة <small>اختياريّة — لقطة عامة أو ضيف ثانٍ، تُفعَّل وتُغلَق متى شئت</small></h3>
+        <label class="switch"><input type="checkbox" id="cam3On"><i></i><span>تفعيل الكاميرا الثالثة</span></label>
+        <label class="fld">جهاز الكاميرا الثالثة <select id="cam3"></select></label>
+        <div id="cam3State" class="hint"></div>
+      </div>
+      <h3><span class="ic" data-i="mic"></span>الصوت <small>تنقية الضوضاء وتسوية الصوت تلقائيّة</small></h3>
+      <label class="fld">الميكروفون <small>مصدر صوت البثّ والتسجيل وملفّ MP3 والريلز والترجمة النصّيّة</small><select id="micSheikh"></select><div class="meter"><i id="mtSheikh"></i></div></label>
+      <div id="micState" class="hint"></div>
+      <label class="fld">تأخير الصوت لمزامنته مع الصورة <b class="v" id="micDelayV">0 م.ث</b><input type="range" id="micDelay" min="0" max="1500" step="10"></label>
+      <p class="hint">يدعم كلّ ميكروفون يظهر في ويندوز: سلكيّ (3.5 مم)، USB، بلوتوث، أو مستقبل لاسلكيّ (ياقة/يد). إن كان أحاديّاً فيُسمَع في الجهتين تلقائيّاً. أوصِل الجهاز ثمّ اضغط «تحديث» ويُكشَف تلقائيّاً عند توصيله. صوت الهاتف لا يُستعمل. للمزامنة: لو تأخّرت الصورة عن الصوت زِد التأخير.</p>
+      <button id="devRefresh" class="mid">تحديث قائمة الأجهزة</button>
+      <h3><span data-pod="تأطير كاميرا المقدّم">تأطير كاميرا الشيخ</span></h3>
+      <label class="switch"><input type="checkbox" id="autoFrame"><i></i><span>تأطير ذكي <small>يتبع وجه <span data-pod="المقدّم">الشيخ</span> تلقائياً في كل المشاهد</small></span></label>
+      <div class="two"><button id="afNow" class="mid">التقط الآن</button><div id="afState" class="hint"></div></div>
+      <p class="hint">لو ضبطت الشرائح يدوياً يتوقّف التأطير الذكي.</p>
+      <h3>تحويل الهاتف العموديّ إلى بثّ أفقيّ <small>Portrait → Landscape</small></h3>
+      <div class="cards2" id="fitSeg"></div>
+      <p class="hint">الهاتف يبقى عموديّاً على الحامل، والبثّ يخرج دائماً أفقيّاً 16:9. يُطبَّق في مشهد «<span data-pod="المقدّم">الشيخ</span>» لمّا تكون صورة الهاتف عموديّة (تُكشف الأشرطة السوداء تلقائيّاً بالتأطير الذكي).</p>
+      <h3>اتّجاه صورة الهاتف <small>لو الهاتف عموديّ وتظهر الصورة جانبيّة</small></h3>
+      <div class="cards5" id="rotSeg"></div>
+      <p class="hint">«تلقائي» يعرف الاتّجاه من وجه <span data-pod="المقدّم">الشيخ</span> (يحتاج التأطير الذكي مفعّلاً)، ويعرض دائماً صورة أفقيّة بينما يبقى الهاتف عموديّاً. أو اختر الزاوية يدويّاً (باتّجاه عقارب الساعة).</p>
+      <div class="sliders" data-who="sheikh">
+      <label><span>تقريب</span><input type="range" min="1" max="2.5" step=".05" data-k="zoom"></label>
+      <label><span>يمين ويسار</span><input type="range" min="0" max="1" step=".01" data-k="fx" class="ltr"></label>
+      <label><span>أعلى وأسفل</span><input type="range" min="0" max="1" step=".01" data-k="fy" class="ltr"></label>
+      </div>
+      <h3><span data-pod="تقريب كاميرا الضيف">تقريب كاميرا الحضور</span></h3>
+      <div class="sliders" data-who="cam2">
+      <label><span>تقريب</span><input type="range" min="1" max="2.5" step=".05" data-k="zoom"></label>
+      <label><span>يمين ويسار</span><input type="range" min="0" max="1" step=".01" data-k="fx" class="ltr"></label>
+      <label><span>أعلى وأسفل</span><input type="range" min="0" max="1" step=".01" data-k="fy" class="ltr"></label>
+      </div>
+    </div>
+
+    <div class="tab" id="t-live">
+      <h2 class="tsec">البثّ</h2>
+      <h3>جودة البثّ والتسجيل</h3>
+      <div class="cards2" id="qualSeg"></div>
+      <h3>وين تبثّ؟ <small>فعّل منصّة أو أكثر — تنبثّ كلها مع بعض</small></h3>
+      <div id="platforms"></div>
+      <h2 class="tsec">التسجيل</h2>
+      <h3>التسجيلات</h3>
+      <p class="hint">كل درس يُحفظ كاملاً على جهازك بصيغة MP4 لمّا تضغط «تسجيل».</p>
+      <button id="recFolder" class="mid"><span class="ic" data-i="folder"></span>افتح مجلّد التسجيلات</button>
+      <h3>فصول يوتيوب <small>تتسجّل تلقائيّاً من أبواب الكتاب</small></h3>
+      <textarea id="chapters" readonly rows="6" placeholder="تظهر هنا أثناء البثّ: كل باب بوقته"></textarea>
+      <button id="chCopy" class="mid"><span class="ic" data-i="copy"></span>انسخ للوصف</button>
+      <div class="capsec">
+      <h3><span class="ic" data-i="mic"></span>الترجمة النصّيّة الحيّة <small>تُكتب كلمات الشيخ أسفل الفيديو مباشرةً</small></h3>
+      <label class="switch"><input type="checkbox" id="capOn"><i></i><span>تشغيل الترجمة النصّيّة <small id="capState"></small></span></label>
+      <div class="capbox">
+      <b>مفتاح Groq المجّانيّ <small id="capKeyBadge"></small></b>
+      <p class="hint" id="capKeyHint"></p>
+      <div id="capKeyForm"><input id="capKey" type="password" placeholder="gsk_…" autocomplete="off" spellcheck="false" dir="ltr">
+      <div class="two"><button id="capGet" class="mid">إنشاء مفتاح مجّاني</button><button id="capSaveKey" class="mid pri">حفظ المفتاح في البرنامج</button></div></div>
+      <button id="capTest" class="mid">اختبار المفتاح</button>
+      <div id="capKeyState" class="hint"></div>
+      </div>
+      <div class="fld">الميكروفون: <b>مايك الشيخ</b> (من تبويب «الأجهزة») <div class="meter"><i id="capMeter"></i></div></div>
+      <div id="capInfo" class="hint"></div>
+      <h3>ما يظهر على الشاشة <small>العربيّة كما قيلت، والفرنسيّة ترجمةً لها</small></h3>
+      <div id="capLangs" class="chips"></div>
+      <p class="hint">فعّل الفرنسيّة وحدها أو مع العربيّة. ترتيب الظهور هو ترتيب اختيارك.</p>
+      <h3>الشكل على الشاشة</h3>
+      <div class="two"><label class="fld">الحجم <select id="capSize"><option value="s">صغير</option><option value="m">متوسّط</option><option value="l">كبير</option></select></label>
+      <label class="fld">الموضع <select id="capPos"><option value="bottom">أسفل الفيديو</option><option value="top">أعلى</option></select></label></div>
+      <label class="fld">الارتفاع عن الحافّة السفلى <input type="range" id="capLift" min="20" max="320" step="5"></label>
+      <label class="fld">نموذج التفريغ <select id="capModel"><option value="whisper-large-v3">Whisper large-v3 — الأدقّ</option><option value="whisper-large-v3-turbo">Whisper large-v3 turbo — أسرع، أقلّ دقّة قليلاً</option></select></label>
+      <label class="switch"><input type="checkbox" id="capHint"><i></i><span>تلميح باسم الكتاب والشيخ <small>يحسّن كتابة الأسماء والمصطلحات</small></span></label>
+      <label class="switch"><input type="checkbox" id="capSave"><i></i><span>حفظ نصّ الدرس في ملفّ <small>بجانب التسجيلات</small></span></label>
+      <button id="capPrev" class="mid">معاينة على الشاشة</button>
+      <h3>آخر ما كُتب</h3>
+      <div id="capFeed" class="capfeed"></div>
+      <p class="hint">التفريغ يتمّ كل مقطع كلام فيظهر النصّ بعد المقطع بثانية أو ثانيتين. الدقّة جيّدة مع الفصحى والميكروفون القريب، وليست معصومة: قد تُخطئ في الأسماء والآيات، فراجع المهمّ. الحدّ المجّانيّ يكفي ساعة بثّ متواصلة تقريباً في الساعة.</p>
+      </div>
+    </div>
+  </aside>
+
+  <section id="stageCol">
+    <div id="previewBox">
+      <img id="preview" alt="">
+      <div id="previewMsg">جارٍ تشغيل المحرّك…</div>
+      <div id="busy" hidden></div>
+      <div id="onair" hidden>على الهواء</div>
+      <div id="scenes"></div>
+    </div>
+    <div id="phDock" hidden></div>
+    <div id="sideNav">
+      <div class="sn r"><button id="snUpR" title="سطر للأعلى"><span class="ic" data-i="up"></span></button><button id="snPrev" class="pg" title="الصفحة السابقة"><span class="ic" data-i="prev"></span></button><button id="snDownR" title="سطر للأسفل"><span class="ic" data-i="down"></span></button></div>
+      <div class="sn l"><button id="snUpL" title="سطر للأعلى"><span class="ic" data-i="up"></span></button><button id="snNext" class="pg" title="الصفحة التالية"><span class="ic" data-i="next"></span></button><button id="snDownL" title="سطر للأسفل"><span class="ic" data-i="down"></span></button></div>
+    </div>
+    <div id="ctl">
+    <div id="camBar">
+      <div id="camState"><span class="dot"></span><span class="tx">الكاميرا…</span></div>
+      <label class="switch"><input type="checkbox" id="bookOnly"><i></i><span>الكتاب فقط <small>(إخفاء الشيخ)</small></span></label>
+    </div>
+    <div id="bookbar">
+      <div class="bk-title"><b id="bkName">لا يوجد كتاب</b><small id="bkChap"></small></div>
+      <div class="bk-ctl">
+        <button id="pPrev" class="nav"><span class="ic" data-i="prev"></span>السابقة</button>
+        <div id="pNum">—</div>
+        <button id="pNext" class="nav"><span>التالية</span><span class="ic" data-i="next"></span></button>
+        <span class="sep"></span>
+        <button id="bBand"><span class="ic" data-i="band"></span>شريط القراءة</button>
+        <button id="bUp"><span class="ic" data-i="up"></span>سطر</button>
+        <button id="bDown"><span class="ic" data-i="down"></span>سطر</button>
+        <button id="bFocus" title="تكبير الصفحة على الشاشة (F)"><span class="ic" data-i="zoom"></span>تكبير</button>
+        <span id="zoomGrp" hidden><button id="bZoomOut" class="zb" title="تصغير (-)">−</button><span id="zLbl">100٪</span><button id="bZoomIn" class="zb" title="تكبير (+)">+</button></span>
+        <span class="sep"></span>
+        <button id="bSearch" title="بحث بكلمة أو عبارة (Ctrl+F)"><span class="ic" data-i="search"></span>بحث</button>
+        <button id="bToc" title="قائمة أبواب الكتاب"><span class="ic" data-i="library"></span>الأبواب</button>
+        <span class="gotobox"><input id="pGoto" inputmode="numeric" placeholder="رقم الصفحة" title="اكتب رقم الصفحة ثمّ Enter (G)"><button id="pGo" class="zb" title="اذهب">اذهب</button></span>
+      </div>
+    </div>
+    </div>
+  </section>
+</main>
+
+<!-- المكتبة: تصفّح مثل نتفليكس -->
+<div id="libView" hidden>
+  <div class="lv-head">
+    <div class="lv-title"><span class="ic" data-i="library"></span><b>المكتبة</b></div>
+    <div class="seg" id="lvSrc"><button data-s="shamela" class="on">المكتبة الشاملة</button><button data-s="archive">أرشيف الإنترنت</button></div>
+    <div class="lv-search"><span class="ic" data-i="search"></span><input id="lvQ" placeholder="ابحث باسم الكتاب أو المؤلّف…"></div>
+    <button id="lvClose" class="iconbtn" title="إغلاق"><span class="ic" data-i="close"></span></button>
+  </div>
+  <div id="lvBody"></div>
+  <div id="sheet" hidden>
+    <div class="sh-card">
+      <button id="shClose" class="iconbtn"><span class="ic" data-i="close"></span></button>
+      <div class="sh-cover"></div>
+      <div class="sh-info">
+        <h2 id="shTitle"></h2><div id="shAuthor"></div><div id="shMeta"></div>
+        <p id="shDesc"></p>
+        <div id="shBtns"></div>
+        <div id="shJob" hidden><div class="jt"></div><div class="bar"><i></i></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<!-- الريلز: قسم مستقلّ يُفتح من الصفحة الرئيسيّة -->
+<div id="reelsView" hidden>
+  <div class="hub-in reels-in">
+    <div class="hub-top"><img src="logo.png" class="hub-logo" alt="المجالس"><div class="grow"></div><button id="rlBack" class="mid">‹ العودة</button></div>
+    <h1>الريلز</h1><p class="hint">مقاطع عموديّة 9:16 تُقتطع من تسجيل كاميرا الشيخ العموديّة، بشريطين وخطوط ونصوص قابلة للتخصيص.</p>
+      <div class="rlcols">
+      <div class="reelsec">
+            <div class="capbox">
+      <b>1) اختر التسجيل والمقطع</b>
+      <label class="fld">تسجيل كاميرا الشيخ <select id="rlFile"></select></label>
+      <p id="rlEmpty" class="hint" hidden>لا توجد تسجيلات بعد. تُحفظ كاميرا الشيخ العموديّة تلقائيّاً طوال كل بثّ أو تسجيل (يلزم اتّصال هاتف الشيخ)، وتظهر هنا بعد انتهائه.</p>
+      <div class="rlplayer"><video id="rlVid" controls preload="metadata"></video><div id="rlCrop"></div></div>
+      <div class="two"><button id="rlIn" class="mid">⇤ بداية المقطع هنا</button><button id="rlOut" class="mid">نهاية المقطع هنا ⇥</button></div>
+      <div class="two"><label class="fld">من <input id="rlStart" dir="ltr" value="0:00"></label><label class="fld">إلى <input id="rlEnd" dir="ltr" value="1:00"></label></div>
+      <div id="rlDur" class="chips"></div>
+      <div id="rlLen" class="hint"></div>
+      <div id="rlCleanSt" class="hint"></div>
+      </div>
+      <h3>2) الشكل <small>الشريطان والخطوط والنصوص</small></h3>
+      <div id="rlLook"></div>
+      <h3>3) الخيارات</h3>
+      <div id="rlOpt"></div>
+      <h3>4) إنشاء الريلز</h3>
+      <button id="rlGo" class="big pri">إنشاء الريلز</button>
+      <button id="rlCancel" class="mid danger" hidden>إلغاء</button>
+      <div class="rlbar"><i id="rlBar"></i></div>
+      <div id="rlMsg" class="hint"></div>
+      <div id="rlResult"></div>
+      <div class="two"><button id="rlFolder" class="mid">فتح مجلّد الريلز</button></div>
+      </div>
+      <aside class="rlside"><div class="rlstick"><b class="rlpt">معاينة الريلز</b><div class="rlprev"><canvas id="rlPrev"></canvas><p class="hint">معاينة المقطع كما سيظهر (إطار من الفيديو عند موضع المشغّل).</p></div></div></aside>
+      </div>
+  </div>
+</div>
+
+<div id="modeHub" hidden></div>
+<div id="hub" hidden></div>
+<div id="bsearch" hidden>
+  <div class="bs-card">
+    <div class="bs-top"><input id="bsQ" placeholder="ابحث بكلمة أو عبارة في الكتاب…" autocomplete="off"><button id="bsGo" class="pri">بحث</button><button id="bsX" class="iconbtn" title="إغلاق (Esc)">✕</button></div>
+    <div class="bs-opts"><label class="switch"><input type="checkbox" id="bsHl" checked><i></i><span>أبرِز الكلمة في صفحة البثّ</span></label><button id="bsClear">إلغاء الإبراز</button></div>
+    <div id="bsInfo" class="hint"></div>
+    <div id="bsList"></div>
+  </div>
+</div>
+<div id="dlg" hidden><form id="dlgForm"></form></div>
+<script src="/ov/themes.js"></script>
+<script src="/ov/podkit.js"></script>
+<script src="/ov/quranlib.js"></script>
+<script src="/ov/arsearch.js"></script>
+<script src="/ov/bookcore.js"></script>
+<script src="booknav.js"></script>
+<script src="general.js"></script>
+<script src="modes.js"></script>
+<script src="podcast.js"></script>
+<script src="quran.js"></script>
+<script src="lab.js"></script>
+<script src="lab2.js"></script>
+<script src="lab3.js"></script>
+<script src="lab4.js"></script>
+
+<script src="halaqat.js"></script>
+<script src="autoframe.js"></script>
+<script src="transpreview.js"></script>
+<script src="bsearch.js"></script>
+<script src="/qr/dist/qrcode.js"></script>
+<script src="phone.js"></script>
+<script src="captions.js"></script>
+<script src="reels.js"></script>
+<script src="cutout.js"></script>
+<script src="app.js"></script>
+<script type="module" src="pdfrender.js"></script>
+</body></html>

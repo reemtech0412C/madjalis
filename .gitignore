@@ -1,0 +1,16 @@
+# مكوّنات ضخمة تُنزَّل/تُبنى محلّياً وليست من الكود
+node_modules/
+dist/
+resources/
+phone/*.apk
+build/vc_redist.x64.exe
+# أسرار وبيانات خاصّة
+groq.key
+*.key
+seed/
+logos/
+tools/license-admin/
+tools/*.bat
+tools/_quran-src.json
+tools/_quran-meta.js
+*.graph.txt

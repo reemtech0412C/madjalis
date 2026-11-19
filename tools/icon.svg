@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+  <radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#1B6656"/><stop offset=".55" stop-color="#0E3A32"/><stop offset="1" stop-color="#061B17"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3DDA0"/><stop offset=".5" stop-color="#D1AA62"/><stop offset="1" stop-color="#9C7430"/></linearGradient>
+  <linearGradient id="page" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF9E6"/><stop offset="1" stop-color="#E7D6A4"/></linearGradient>
+  <linearGradient id="pageR" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFDF3"/><stop offset="1" stop-color="#EBDDB0"/></linearGradient>
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#F3DDA0" stop-opacity=".35"/><stop offset="1" stop-color="#F3DDA0" stop-opacity="0"/></radialGradient>
+  <filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity=".45"/></filter>
+  <clipPath id="sq"><rect width="1024" height="1024" rx="230"/></clipPath>
+</defs>
+<g clip-path="url(#sq)">
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="470" r="470" fill="url(#glow)"/>
+  <g fill="none" stroke="url(#gold)" stroke-linejoin="round">
+    <rect x="40" y="40" width="944" height="944" rx="196" stroke-width="7" opacity=".55"/>
+    <!-- نجمة ثمانيّة (ربع الحزب) -->
+    <g transform="translate(512 500)">
+      <rect x="-262" y="-262" width="524" height="524" stroke-width="16" fill="#0A2D27" fill-opacity=".55"/>
+      <rect x="-262" y="-262" width="524" height="524" stroke-width="16" transform="rotate(45)" fill="#0A2D27" fill-opacity=".55"/>
+      <circle r="190" stroke-width="5" opacity=".6"/>
+    </g>
+  </g>
+  <!-- كتاب مفتوح -->
+  <g filter="url(#sh)">
+    <path d="M512 596 C446 556 366 552 300 580 L300 742 C366 716 446 722 512 764 Z" fill="url(#page)"/>
+    <path d="M512 596 C578 556 658 552 724 580 L724 742 C658 716 578 722 512 764 Z" fill="url(#pageR)"/>
+    <path d="M512 596 L512 764" stroke="#B88F43" stroke-width="7" stroke-linecap="round"/>
+    <g stroke="#C9AE72" stroke-width="7" stroke-linecap="round" opacity=".8" fill="none">
+      <path d="M338 618 C392 600 446 606 490 630"/><path d="M338 656 C392 638 446 644 490 668"/><path d="M338 694 C392 676 446 682 490 706"/>
+      <path d="M534 630 C578 606 632 600 686 618"/><path d="M534 668 C578 644 632 638 686 656"/><path d="M534 706 C578 682 632 676 686 694"/>
+    </g>
+  </g>
+  <!-- إشارة البثّ -->
+  <g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-width="22">
+    <path d="M440 430 A100 100 0 0 1 440 330" transform="translate(0 -0)"/>
+    <path d="M584 430 A100 100 0 0 0 584 330"/>
+    <path d="M402 466 A154 154 0 0 1 402 294"/>
+    <path d="M622 466 A154 154 0 0 0 622 294"/>
+  </g>
+  <circle cx="512" cy="380" r="44" fill="url(#gold)" filter="url(#sh)"/>
+  <circle cx="512" cy="380" r="17" fill="#FF453A"/>
+</g>
+</svg>

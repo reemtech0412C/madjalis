@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تفعيل المجالس</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self' 'unsafe-inline'">
+<link rel="stylesheet" href="../assets/fonts/fonts.css?v=3">
+<style>
+:root{--bg:#0A1311;--card:#13241F;--line:#25453D;--gold:#D1AA62;--gold-hi:#EBD29A;--fg:#F3F6F4;--fg2:#A8BBB3;--red:#FF6B5E;--ok:#3DCB8B}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:radial-gradient(120% 80% at 50% 0%,#12302A,#0A1311 62%);color:var(--fg);font:15px "TS","IBM Plex Sans Arabic",system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:26px 30px 18px;height:100%;display:flex;flex-direction:column}
+.top{text-align:center}.top img{height:64px}
+h1{font:700 30px "TSD","Amiri",serif;color:var(--gold-hi);text-align:center;margin:10px 0 4px}
+p.lead{color:var(--fg2);text-align:center;margin:0 0 16px;line-height:1.8}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:12px}
+.card b.t{color:var(--gold);font-size:14px;display:block;margin-bottom:8px}
+.code{direction:ltr;text-align:center;font:700 28px "Consolas","Courier New",monospace;letter-spacing:2px;color:var(--fg);background:#0B1815;border:1.5px dashed var(--gold);border-radius:12px;padding:12px 8px;user-select:all}
+.row{display:flex;gap:10px;margin-top:10px}
+button{flex:1;background:#192F28;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--fg);font:inherit;cursor:pointer}
+button:hover{border-color:var(--gold)}button.pri{background:var(--gold);color:#10201B;border-color:var(--gold);font-weight:700}
+textarea{width:100%;height:92px;resize:none;background:#0B1815;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--fg);font:13px "Consolas",monospace;direction:ltr;outline:none}
+textarea:focus{border-color:var(--gold)}
+#msg{min-height:22px;margin-top:8px;font-size:14px;text-align:center}#msg.bad{color:var(--red)}#msg.ok{color:var(--ok)}
+.foot{margin-top:auto;text-align:center;color:var(--fg2);font-size:12.5px;line-height:1.8}
+.foot a{color:var(--gold-hi);text-decoration:none}
+</style></head><body><div class="wrap">
+<div class="top"><img src="logo.png" alt="المجالس"></div>
+<h1>تفعيل البرنامج</h1>
+<p class="lead">هذه النسخة تعمل بكود تفعيل خاصّ بكل جهاز. أرسل «رمز الجهاز» أدناه إلى المطوّر ليرسل لك كود التفعيل، ثمّ الصقه هنا. لا يلزم إنترنت.</p>
+<div class="card"><b class="t">1) رمز هذا الجهاز</b><div class="code" id="dev">…</div>
+<div class="row"><button id="copy">نسخ الرمز</button><button id="wa" class="pri">إرسال عبر واتساب</button><button id="mail">بالبريد</button></div></div>
+<div class="card"><b class="t">2) كود التفعيل الذي وصلك</b><textarea id="key" placeholder="الصق كود التفعيل هنا" spellcheck="false"></textarea>
+<div class="row"><button id="go" class="pri">تفعيل</button><button id="quit">إغلاق</button></div><div id="msg"></div></div>
+<div class="foot">للتواصل وطلب الكود — واتساب: <span id="ph" dir="ltr" style="color:var(--gold-hi)"></span> · البريد: <a id="em" href="#"></a><br>© YamiTech</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+lic.info().then(i=>{$("ph").textContent=i.phone;$("dev").textContent=i.code;$("em").textContent=i.email;$("em").onclick=e=>{e.preventDefault();lic.mail()};if(i.prev)say(i.prev,"bad")});
+function say(t,k){$("msg").textContent=t;$("msg").className=k||""}
+$("copy").onclick=()=>lic.copy().then(()=>say("نُسخ الرمز — الصقه في رسالتك","ok"));
+$("mail").onclick=()=>lic.mail();$("wa").onclick=()=>lic.wa();
+$("quit").onclick=()=>lic.quit();
+$("go").onclick=async()=>{const k=$("key").value.trim();if(!k)return say("الصق الكود أوّلاً","bad");$("go").disabled=true;const r=await lic.activate(k);$("go").disabled=false;if(r.ok)say("تمّ التفعيل ✓ جارٍ التشغيل…","ok");else say(r.err,"bad")};
+</script></body></html>

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>خلفية</title>
+<link rel="stylesheet" href="ov.css">
+<style>body{background:var(--bg)}.glow{position:absolute;inset:0;pointer-events:none}</style></head>
+<body>
+<script src="themes.js"></script><script src="ov.js"></script><script src="podkit.js"></script>
+<script>
+  // الخلفية: لون الهويّة + النقش المختار يتحرّك ببطء + إضاءة ناعمة في المنتصف
+  boot(S => {
+    if (S.mode === "podcast") { PK.bg(document.body, S); return; }          // البودكاست: خلفيّة القالب
+    pattern(document.body, { alpha: .13 });
+    const t = S._t;
+    el("div", { background: t.light
+      ? "radial-gradient(80% 70% at 50% 45%, rgba(255,255,255,0) 30%, rgba(0,0,0,.08) 100%)"
+      : `radial-gradient(70% 65% at 50% 42%, ${t.hi}8c 0%, transparent 60%), radial-gradient(120% 100% at 50% 50%, transparent 55%, ${t.deep}c0 100%)` }, document.body, "glow");
+  });
+</script>
+</body></html>

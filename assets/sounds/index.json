@@ -1,0 +1,100 @@
+[
+ {
+  "id": "tp-whoosh",
+  "name": "هواء",
+  "kind": "transition",
+  "file": "tp-whoosh.mp3",
+  "sec": 1.3
+ },
+ {
+  "id": "tp-fast",
+  "name": "سريع",
+  "kind": "transition",
+  "file": "tp-fast.mp3",
+  "sec": 0.55
+ },
+ {
+  "id": "tp-impact",
+  "name": "ضربة",
+  "kind": "transition",
+  "file": "tp-impact.mp3",
+  "sec": 1.6
+ },
+ {
+  "id": "tp-stinger",
+  "name": "ستينغر",
+  "kind": "transition",
+  "file": "tp-stinger.mp3",
+  "sec": 1.8
+ },
+ {
+  "id": "tp-ding",
+  "name": "تنبيه",
+  "kind": "transition",
+  "file": "tp-ding.mp3",
+  "sec": 1.4
+ },
+ {
+  "id": "tp-pop",
+  "name": "فقاعة",
+  "kind": "transition",
+  "file": "tp-pop.mp3",
+  "sec": 0.3
+ },
+ {
+  "id": "tp-glitch",
+  "name": "رقمي",
+  "kind": "transition",
+  "file": "tp-glitch.mp3",
+  "sec": 0.55
+ },
+ {
+  "id": "tp-pluck",
+  "name": "نغمات",
+  "kind": "transition",
+  "file": "tp-pluck.mp3",
+  "sec": 1.3
+ },
+ {
+  "id": "tp-tape",
+  "name": "شريط",
+  "kind": "transition",
+  "file": "tp-tape.mp3",
+  "sec": 0.75
+ },
+ {
+  "id": "am-calm",
+  "name": "هدوء",
+  "kind": "ambient",
+  "file": "am-calm.mp3",
+  "sec": 60
+ },
+ {
+  "id": "am-cloud",
+  "name": "غيم",
+  "kind": "ambient",
+  "file": "am-cloud.mp3",
+  "sec": 60
+ },
+ {
+  "id": "am-dawn",
+  "name": "فجر",
+  "kind": "ambient",
+  "file": "am-dawn.mp3",
+  "sec": 60
+ },
+ {
+  "id": "am-oasis",
+  "name": "واحة",
+  "kind": "ambient",
+  "file": "am-oasis.mp3",
+  "sec": 60
+ },
+ {
+  "id": "am-night",
+  "name": "ليل",
+  "kind": "ambient",
+  "file": "am-night.mp3",
+  "sec": 60
+ }
+]

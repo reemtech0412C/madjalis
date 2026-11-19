@@ -1,0 +1,35 @@
+/* «منبر» — أساس طبقات البثّ. الألوان متغيّرات تضبطها الهويّة المختارة (themes.js) */
+@import url("/assets/fonts/fonts.css?v=3");
+:root{
+  --fa:"TSD","Amiri",serif;                        /* ثمانية سيرف ديسبلاي: العناوين والأسماء */
+  --fs:"TS","IBM Plex Sans Arabic",sans-serif;    /* ثمانية سانس: البيانات والتسميات */
+  --deep:#0A231D;--bg:#0E2F27;--mid:#143F34;--hi:#1C5244;--accent:#C9A15A;--accent-hi:#E6CB8E;--line:rgba(201,161,90,.55);
+  --fg:#fff;--fg2:rgba(255,255,255,.78);--paper:#FBF6EA;--ink:#1E2A25;
+}
+html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;background:transparent}
+body{font-family:var(--fs);color:var(--fg);direction:rtl;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.abs{position:absolute}
+.t{white-space:nowrap;line-height:1.3}
+.orn{display:flex;align-items:center;gap:12px;color:var(--accent)}
+.orn::before,.orn::after{content:"";height:1.5px;flex:1;background:linear-gradient(90deg,transparent,var(--accent))}
+.orn::after{background:linear-gradient(270deg,transparent,var(--accent))}
+.orn i{width:9px;height:9px;transform:rotate(45deg);border:1.5px solid var(--accent);flex:none}
+.logo-slot{display:flex;align-items:center;justify-content:center}
+.logo-slot img{max-width:100%;object-fit:contain;display:block}
+.plate{position:absolute;background:linear-gradient(180deg,var(--plate1),var(--plate2));border:1.5px solid var(--accent);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.plate::after{content:"";position:absolute;inset:6px;border:1px solid var(--line);border-radius:17px;pointer-events:none}
+.rise{animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.hair{position:absolute;border:1.5px solid var(--accent);border-radius:24px;box-sizing:border-box}
+.hair::after{content:"";position:absolute;inset:-9px;border:1px solid var(--line);border-radius:31px}
+/* الشريط السفليّ: تدرّج لونيّ من الأسفل + نصّ من اليمين (بلا صناديق) */
+.grad{position:absolute;left:0;right:0;bottom:0;pointer-events:none}
+.lt{position:absolute;bottom:64px;text-align:right;direction:rtl}
+.lt .role{font:500 26px var(--fs);color:var(--accent-hi);letter-spacing:0;margin-bottom:2px}
+.lt .name{font:700 66px var(--fa);color:#fff;line-height:1.15;text-shadow:0 2px 24px rgba(0,0,0,.35)}
+.lt .bar{height:3px;width:120px;background:var(--accent);border-radius:3px;margin:14px 0 14px auto}
+.lt .meta{font:500 26px var(--fs);color:rgba(255,255,255,.86)}
+.lt .meta b{font-weight:700;color:#fff}
+.lt .meta i{font-style:normal;color:var(--accent-hi);margin:0 10px}
+.cin{animation:cin 1s cubic-bezier(.16,1,.3,1) both}
+@keyframes cin{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}

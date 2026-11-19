@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>الكتاب</title>
+<link rel="stylesheet" href="ov.css">
+<style>
+  #stage{position:absolute;inset:0;perspective:2600px}
+  .layer{position:absolute;inset:0;transition:opacity .45s ease}
+  .pg{position:absolute;background:var(--paper);overflow:hidden}
+  .pg img{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:multiply;display:block}
+  .pg .tex{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%, rgba(255,255,255,0) 60%, rgba(150,120,70,.10) 100%)}
+  .spine-r{background:linear-gradient(90deg, rgba(90,70,40,.22), rgba(90,70,40,0) 7%)}
+  .spine-l{background:linear-gradient(270deg, rgba(90,70,40,.22), rgba(90,70,40,0) 7%)}
+  .band{position:absolute;left:5%;right:5%;border-radius:8px;background:color-mix(in srgb, var(--accent) 34%, transparent);mix-blend-mode:multiply;
+    transition:top .35s cubic-bezier(.2,.8,.2,1),height .35s,opacity .3s;box-shadow:0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent) inset;z-index:3}
+  .band::after{content:"";position:absolute;right:-22px;top:50%;width:11px;height:11px;margin-top:-6px;transform:rotate(45deg);background:var(--accent)}
+  .leaf{position:absolute;transform-style:preserve-3d;z-index:5}
+  .leaf .face{position:absolute;inset:0;backface-visibility:hidden;background:var(--paper);overflow:hidden}
+  .leaf .shade{position:absolute;inset:0;pointer-events:none;z-index:4}
+  .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--fg2);font:500 30px var(--fs)}
+  mark.hl{background:rgba(255,205,84,.6);color:inherit;border-radius:4px;padding:0 3px;box-decoration-break:clone}
+</style></head>
+<body>
+<div id="stage" data-keep="1"></div>
+<script src="themes.js"></script><script src="arsearch.js"></script><script src="ov.js"></script><script src="bookcore.js"></script>
+<script>
+// الكتاب بأربعة أساليب:  ?mode=card (بطاقة) | page (صفحة كاملة) | open (كتاب مفتوح) | strip (سطران/ثلاثة أسطر من الصفحة الحاليّة)
+// المقاس الفعليّ للطبقة من ?w=&h= (OBS يعطي المصدر حجمه)
+const MODE = P("mode") || "card", BW = +(P("w") || 1920), BH = +(P("h") || 1080);
+document.documentElement.style.width = document.body.style.width = BW + "px";
+document.documentElement.style.height = document.body.style.height = BH + "px";
+const stage = document.getElementById("stage");
+let META = null, TEXT = null, ST = { page: 1, focus: false, band: null, step: .042 }, spread = null, focusL = null;
+const NP = () => (META ? META.pages : 0), ASP = () => (META && META.aspect) || .70;
+const RTL = () => (MB.S.design.flip || "rtl") === "rtl";
+const src = n => `/books/${encodeURIComponent(META.id)}/pages/${String(n).padStart(4, "0")}.jpg`;
+const clampP = p => Math.max(1, Math.min(NP() || 1, p));
+const spreadOf = p => p % 2 ? p : p - 1;
+
+// ---------- محتوى الصفحة ----------
+function fillPage(d, n) {
+  d.querySelectorAll("img,.tp").forEach(x => x.remove());
+  d.dataset.n = n;
+  if (!META || n < 1 || n > NP()) return;
+  if (META.kind === "text") return textPage(d, n);
+  const i = document.createElement("img"); i.src = src(n); d.prepend(i);
+}
+// إبراز كلمة/عبارة البحث في صفحات النصّ (يتجاهل التشكيل وفروق الهمزات والتاء)؛ q فارغ = إزالة الإبراز
+function highlight(root, q) {
+  root.querySelectorAll("mark.hl").forEach(m => m.replaceWith(document.createTextNode(m.textContent))); root.normalize();
+  const qn = q ? ARSEARCH.normMap(q).s : ""; if (!qn) return;
+  const words = qn.split(" "), tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
+  while (tw.nextNode()) nodes.push(tw.currentNode);
+  for (const tn of nodes) {
+    const { s, map } = ARSEARCH.normMap(tn.data), pats = s.includes(qn) ? [qn] : words, rs = [];
+    for (const p of pats) { let i = s.indexOf(p); while (i >= 0 && p) { rs.push([map[i], map[i + p.length - 1] + 1]); i = s.indexOf(p, i + p.length); } }
+    if (!rs.length) continue;
+    rs.sort((a, b) => a[0] - b[0]); const m = [rs[0]];
+    for (const r of rs.slice(1)) { const l = m[m.length - 1]; if (r[0] <= l[1]) l[1] = Math.max(l[1], r[1]); else m.push(r); }
+    for (const [a, b] of m.reverse()) { const rg = document.createRange(); rg.setStart(tn, a); rg.setEnd(tn, b); const mk = document.createElement("mark"); mk.className = "hl"; rg.surroundContents(mk); }
+  }
+}
+function textPage(d, n) {
+  const pg = TEXT && TEXT[n - 1]; if (!pg) return;
+  const w = parseFloat(d.style.width) || d.clientWidth;
+  const box = BookCore.textBox(pg, META); d.prepend(box);          // ورقة قياسيّة ثابتة العرض: تتطابق مواضع الأسطر في كل المشاهد
+  box.style.transform = "scale(" + (w / BookCore.W0) + ")";
+  box.fit();
+  if (ST.hl) highlight(box, ST.hl);
+}
+document.fonts.addEventListener("loadingdone", () => document.querySelectorAll(".tp").forEach(b => b.fit && b.fit()));
+document.fonts.load("20px Amiri"); document.fonts.load("bold 20px Amiri");
+
+// ---------- الهندسة ----------
+function geo() {
+  const a = ASP();
+  if (MODE === "card") { const pad = 34, ph = BH - pad * 2, pw = Math.min(ph * a, (BW - 60) / 2); return { ph: pw / a, pw, cx: BW / 2, top: (BH - pw / a) / 2, bg: true }; }
+  if (MODE === "page") { const pw = Math.min(BW, BH * a); return { ph: pw / a, pw, cx: BW / 2, top: 0, single: true }; }
+  const pw = Math.min((BH - 40) * a, (BW - 60) / 2); return { ph: pw / a, pw, cx: BW / 2, top: (BH - pw / a) / 2, cover: true };
+}
+function pageEl(n, x, y, w, h, side, parent) {
+  const d = el("div", { left: x + "px", top: y + "px", width: w + "px", height: h + "px" }, parent, "pg");
+  el("div", {}, d, "tex");
+  if (side) el("div", { position: "absolute", inset: 0 }, d, side === "r" ? "spine-r" : "spine-l");
+  fillPage(d, n);
+  return d;
+}
+const BH_ = () => ST.bh ?? ST.step * 1.15;                         // ارتفاع الشريط (نسبة من الصفحة): دقيق من أسطر الصفحة، أو تقريبيّ إن لم تُعرف
+function band(parent) { return el("div", { top: ((ST.band ?? 0) * 100) + "%", height: (BH_() * 100) + "%", opacity: ST.band == null ? 0 : 1 }, parent, "band"); }
+
+// صفحتان: «أ» الصفحة الأولى من الزوج (يمين في الكتاب العربيّ) و«ب» التالية
+function buildSpread() {
+  const g = geo(), L = el("div", {}, stage, "layer");
+  if (g.bg) el("div", { inset: 0, background: "linear-gradient(180deg,#FBF6EA,#F1E8D3)", borderRadius: "24px" }, L, "abs");
+  if (g.single) {
+    const p = pageEl(ST.page, (BW - g.pw) / 2, 0, g.pw, g.ph, null, L);
+    p.style.boxShadow = "0 24px 60px rgba(0,0,0,.35)"; p.style.borderRadius = "4px";
+    L._pages = { one: p }; band(p); L._s = ST.page; return L;
+  }
+  const s = spreadOf(ST.page), x0 = g.cx - g.pw, y = g.top;
+  if (g.cover) {
+    el("div", { left: (x0 - 22) + "px", top: (y - 14) + "px", width: (g.pw * 2 + 44) + "px", height: (g.ph + 28) + "px", background: "linear-gradient(180deg,var(--hi),var(--deep))", borderRadius: "10px", boxShadow: "0 40px 90px rgba(0,0,0,.45), inset 0 0 0 2px var(--line)" }, L, "abs");
+    for (let i = 0; i < 4; i++) el("div", { left: (x0 - 4 - i * 3) + "px", top: (y + 3 + i) + "px", width: (g.pw * 2 + 8 + i * 6) + "px", height: (g.ph - 6 - i * 2) + "px", background: i % 2 ? "#EDE3CC" : "#F7F0DF", borderRadius: "3px" }, L, "abs");
+  } else el("div", { left: x0 + "px", top: y + "px", width: g.pw * 2 + "px", height: g.ph + "px", boxShadow: "0 18px 40px rgba(60,45,20,.22)" }, L, "abs");
+  const rtl = RTL();
+  const right = pageEl(rtl ? s : s + 1, g.cx, y, g.pw, g.ph, "r", L), left = pageEl(rtl ? s + 1 : s, x0, y, g.pw, g.ph, "l", L);
+  L._pages = { right, left, A: rtl ? right : left, B: rtl ? left : right }; L._s = s; L._g = g;
+  band(ST.page === s ? L._pages.A : L._pages.B);
+  return L;
+}
+function buildFocus() {
+  const L = el("div", { overflow: "hidden", borderRadius: MODE === "card" ? "24px" : "0" }, stage, "layer");
+  if (MODE === "card") el("div", { inset: 0, background: "linear-gradient(180deg,#FBF6EA,#F1E8D3)" }, L, "abs");
+  const Z = Math.max(.5, Math.min(2.4, ST.zoom || 1)), fw = (MODE === "page" ? BW * .98 : MODE === "card" ? BW * .74 : Math.min(BW * .62, 1250)) * Z;
+  const fh = fw / ASP();
+  const wrap = el("div", { left: ((BW - fw) / 2) + "px", top: 0, width: fw + "px", height: fh + "px", transition: "transform .6s cubic-bezier(.2,.8,.2,1)" }, L, "abs");
+  const p = pageEl(ST.page, 0, 0, fw, fh, null, wrap);
+  if (MODE !== "card") p.style.boxShadow = "0 30px 80px rgba(0,0,0,.4)";
+  L._wrap = wrap; L._fh = fh; L._b = band(p);
+  panFocus(L); return L;
+}
+function panFocus(L) {
+  const center = ((ST.band ?? .12) + BH_() / 2) * L._fh;
+  L._wrap.style.transform = `translateY(${Math.max(Math.min(BH * .42 - center, 0), BH - L._fh)}px)`;
+}
+
+// ---------- التقليب: الورقة تنقلب من جهة «ب» إلى «أ» للأمام، والعكس للخلف ----------
+function flip(dir, from, to) {
+  const g = spread._g, PG = spread._pages;
+  const leafSide = dir > 0 ? (PG.B === PG.right ? "r" : "l") : (PG.A === PG.right ? "r" : "l");
+  const leaf = el("div", { left: (leafSide === "r" ? g.cx : g.cx - g.pw) + "px", top: g.top + "px", width: g.pw + "px", height: g.ph + "px", transformOrigin: leafSide === "r" ? "left center" : "right center" }, spread, "leaf");
+  const front = el("div", {}, leaf, "face"), back = el("div", { transform: "rotateY(180deg)" }, leaf, "face");
+  front.style.width = back.style.width = g.pw + "px"; front.style.height = back.style.height = g.ph + "px";
+  fillPage(front, dir > 0 ? from + 1 : from);
+  fillPage(back, dir > 0 ? to : to + 1);
+  const shF = el("div", {}, front, "shade"), shB = el("div", {}, back, "shade");
+  if (dir > 0) fillPage(PG.B, to + 1); else fillPage(PG.A, to);
+  const D = 820, ease = "cubic-bezier(.45,.05,.25,1)", sgn = leafSide === "l" ? 1 : -1;
+  leaf.animate([{ transform: "rotateY(0deg)" }, { transform: `rotateY(${sgn * 180}deg)` }], { duration: D, easing: ease, fill: "forwards" });
+  const sh = `linear-gradient(${leafSide === "l" ? 270 : 90}deg, rgba(0,0,0,.28), rgba(0,0,0,0) 60%)`;
+  shF.style.background = shB.style.background = sh;
+  shF.animate([{ opacity: 0 }, { opacity: 1 }], { duration: D / 2, fill: "forwards" });
+  shB.animate([{ opacity: 1 }, { opacity: 0 }], { duration: D / 2, delay: D / 2, fill: "forwards" });
+  setTimeout(() => { if (dir > 0) fillPage(PG.A, to); else fillPage(PG.B, to + 1); leaf.remove(); spread._s = to; placeBand(); }, D);
+}
+function placeBand() {
+  if (!spread || !spread._pages) return;
+  stage.querySelectorAll(".layer .band").forEach(b => { if (!b.closest(".leaf")) b.remove(); });
+  const PG = spread._pages;
+  band(PG.one || (String(ST.page) === PG.A.dataset.n ? PG.A : PG.B));
+}
+
+// ---------- الرسم ----------
+function preload(n) { if (META && META.kind !== "text") for (const k of [n - 2, n - 1, n + 1, n + 2, n + 3, n + 4]) if (k >= 1 && k <= NP()) new Image().src = src(k); }
+// ---------- «سطور»: مقطع من الصفحة (سطران/ثلاثة) داخل شريط ورقيّ بخلفيّة تدرّجيّة خفيفة ----------
+let stripEl = null, stripPage = 0;
+function renderStrip() {
+  const R = Object.assign({ lines: 3, size: 1, bg: .55, fade: true }, (MB.S.design || {}).reading || {});
+  if (!META) { stage.innerHTML = ""; stripEl = null; return; }
+  const front = (P("place") || "front") === "front";
+  let sel = ST.sel;
+  if (!sel || sel.page !== ST.page) { const t = ST.band ?? .1, h = (ST.bh ?? ST.step * 1.15) * R.lines; sel = { t, b: Math.min(1, t + h), l: .06, r: .94 }; }
+  const pad = front ? 40 : 28, ip = 22, ipv = 3, AW = (BW - pad * 2) * Math.max(.5, Math.min(1.1, R.size)), AH = BH - pad * 2 - (front ? 28 : 0) - ipv * 2;
+  const bw = Math.max(.2, sel.r - sel.l), a = ASP();
+  let pw = AW / bw, ph = pw / a; const rh = (sel.b - sel.t) * ph;
+  if (rh > AH) { const k = AH / rh; pw *= k; ph *= k; }
+  const sw = bw * pw + ip * 2, sh = (sel.b - sel.t) * ph + ipv * 2;
+  const sx = (BW - sw) / 2, sy = front ? BH - sh - pad - 8 : (BH - sh) / 2;
+  const geo = { left: sx + "px", top: sy + "px", width: sw + "px", height: sh + "px" };
+  if (!stripEl || stripPage !== ST.page) {
+    stage.innerHTML = ""; stripPage = ST.page;
+    // خلفيّة تدرّجيّة خفيفة خلف الشريط
+    el("div", { inset: 0, background: front ? "linear-gradient(0deg, rgba(0,0,0," + (.62 * R.bg).toFixed(2) + ") 0%, rgba(0,0,0," + (.28 * R.bg).toFixed(2) + ") 55%, rgba(0,0,0,0) 100%)" : "radial-gradient(70% 80% at 50% 50%, rgba(0,0,0," + (.5 * R.bg).toFixed(2) + "), rgba(0,0,0,0) 100%)" }, stage, "abs");
+    const strip = el("div", Object.assign({ background: "var(--paper)", borderRadius: "22px", overflow: "hidden", boxShadow: "0 18px 50px rgba(0,0,0,.45), 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent)", transition: "left .45s, top .45s, width .45s, height .45s", opacity: 0 }, geo), stage, "abs");
+    const pgx = el("div", { left: (-sel.l * pw + ip) + "px", top: (-sel.t * ph + ipv) + "px", width: pw + "px", height: ph + "px", transition: "left .45s cubic-bezier(.2,.8,.2,1), top .45s cubic-bezier(.2,.8,.2,1)" }, strip, "pg");
+    el("div", {}, pgx, "tex"); fillPage(pgx, ST.page);
+    if (R.fade) el("div", { inset: 0, pointerEvents: "none", background: "linear-gradient(90deg, rgba(0,0,0,.10), rgba(0,0,0,0) 6%, rgba(0,0,0,0) 94%, rgba(0,0,0,.10))" }, strip, "abs");
+    strip._pgx = pgx; stripEl = strip; requestAnimationFrame(() => requestAnimationFrame(() => { strip.style.opacity = 1; }));
+    return;
+  }
+  Object.assign(stripEl.style, geo);
+  Object.assign(stripEl._pgx.style, { left: (-sel.l * pw + ip) + "px", top: (-sel.t * ph + ipv) + "px", width: pw + "px", height: ph + "px" });
+  const tp = stripEl._pgx.querySelector(".tp"); if (tp) tp.style.transform = "scale(" + (pw / BookCore.W0) + ")";
+  if (ST.hl) highlight(stripEl._pgx, ST.hl);
+}
+function render(prev) {
+  if (MODE === "strip") return renderStrip();
+  if (!META) { stage.innerHTML = ""; const e = el("div", {}, stage, "empty"); e.innerHTML = `<div style="font:700 44px var(--fa);color:var(--accent-hi)">اختر كتاباً من «المكتبة»</div><div>في برنامج بث الدروس العلمية</div>`; return; }
+  const was = prev || {};
+  const sNew = MODE === "page" ? ST.page : spreadOf(ST.page), modeChanged = was.focus !== ST.focus;
+  if (spread && !ST.focus && !modeChanged && spread._s != null && Math.abs(sNew - spread._s) === 2 && MODE !== "page") { flip(Math.sign(sNew - spread._s), spread._s, sNew); preload(ST.page); return; }
+  if (spread && !ST.focus && !modeChanged && sNew === spread._s) { placeBand(); return; }
+  if (focusL && ST.focus && !modeChanged && was.page === ST.page && (was.zoom || 1) === (ST.zoom || 1)) {
+    focusL._b.style.top = ((ST.band ?? 0) * 100) + "%"; focusL._b.style.height = (BH_() * 100) + "%"; focusL._b.style.opacity = ST.band == null ? 0 : 1;
+    panFocus(focusL); return;
+  }
+  const old = [...stage.children];
+  const L = ST.focus ? buildFocus() : buildSpread();
+  if (ST.focus) { focusL = L; spread = null; } else { spread = L; focusL = null; }
+  L.style.opacity = 0; requestAnimationFrame(() => requestAnimationFrame(() => { L.style.opacity = 1; }));
+  old.forEach(o => { o.style.opacity = 0; setTimeout(() => o.remove(), 500); });
+  preload(ST.page);
+}
+function setState(n) {
+  const prev = Object.assign({}, ST); ST = Object.assign({}, ST, n); ST.page = clampP(ST.page); render(prev);
+  if ((prev.hl || null) !== (ST.hl || null)) document.querySelectorAll(".tp").forEach(b => highlight(b, ST.hl));      // تغيّر الإبراز دون تغيّر الصفحة
+}
+async function loadBook(S) {
+  const id = S.book && S.book.id;
+  if (!id) { META = null; TEXT = null; return; }
+  if (META && META.id === id && META._v === S.book.v) return;
+  META = await (await fetch(`/books/${encodeURIComponent(id)}/book.json`, { cache: "no-store" })).json(); META._v = S.book.v;
+  TEXT = META.kind === "text" ? await (await fetch(`/books/${encodeURIComponent(id)}/text.json`)).json() : null;
+}
+let lastKey = "";
+boot(async S => {
+  await loadBook(S);
+  ST = Object.assign(ST, S.bookState || {}); ST.page = clampP(ST.page);
+  const key = [S.book && S.book.id, S.book && S.book.v, S.design.flip, S.design.theme].join("|");
+  if (key !== lastKey) { lastKey = key; stage.innerHTML = ""; spread = focusL = stripEl = null; render(null); }
+}, { onBook: b => setState(b) });
+</script>
+</body></html>
